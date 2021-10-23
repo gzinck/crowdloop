@@ -1,7 +1,7 @@
 import React from "react";
 
-const maxNum = 127;
-const minNum = 0;
+const maxNum = 1;
+const minNum = -1;
 
 interface Props {
   shape: Float32Array; // Should be numbers in [0, 127]
@@ -17,8 +17,8 @@ const LoopVis = (props: Props): React.ReactElement => {
   const visPath = props.shape.reduce((acc, curr, idx) => {
     const angle = -((idx / props.shape.length) * 2 * Math.PI) + Math.PI / 2;
     const normalizedVal = (curr - minNum) / (maxNum - minNum);
-    const x = (0.5 + 0.5 * normalizedVal) * props.radius * Math.cos(angle);
-    const y = -(0.5 + 0.5 * normalizedVal) * props.radius * Math.sin(angle);
+    const x = (0.2 + 0.8 * normalizedVal) * props.radius * Math.cos(angle);
+    const y = -(0.2 + 0.8 * normalizedVal) * props.radius * Math.sin(angle);
 
     // Move to this position if this is the first position, else make the line
     return acc === "" ? `M ${x}, ${y}` : `${acc} L ${x} ${y}`;

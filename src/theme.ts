@@ -9,6 +9,10 @@ const theme = {
             default: "#000",
             light: "#555",
             contrastText: "#FFF"
+        },
+        recording: {
+            pending: "#bd7b09",
+            recording: "#b02000",
         }
     },
     padding: (multiplier: number = 1) => `${multiplier * 0.5}rem`

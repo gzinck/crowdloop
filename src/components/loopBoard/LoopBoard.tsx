@@ -1,7 +1,5 @@
 import React from "react";
 import styled from "styled-components";
-import recordMP3Loop from "../../audio/loopRecorderMP3";
-import SharedAudioContext from "../../audio/SharedAudioContext";
 import theme from "../../theme";
 import LoopContext from "../LoopContext";
 import LoopDisk from "./loopDisk/LoopDisk";
@@ -18,24 +16,23 @@ const Board = styled.div`
 
 const LoopBoard = (): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
-  const audio = React.useContext(SharedAudioContext);
 
-  React.useEffect(() => {
-    if (audio.micStream) {
-      const sub = recordMP3Loop(audio, 5000).subscribe({
-        next: (mp3) => console.log(mp3),
-        complete: () => console.log("Complete!"),
-        error: (err) => console.log(err),
-      });
+  // React.useEffect(() => {
+  //   if (audio.micStream) {
+  //     const sub = recordMP3Loop(clockCtx, audio).subscribe({
+  //       next: (mp3) => console.log(mp3),
+  //       complete: () => console.log("Complete!"),
+  //       error: (err) => console.log(err),
+  //     });
 
-      return () => sub.unsubscribe();
-    }
-  }, [audio]);
+  //     return () => sub.unsubscribe();
+  //   }
+  // }, [audio, clockCtx]);
 
   return (
     <Board>
-      {loopCtx.loops.map((loop, idx) => (
-        <LoopDisk loop={loop} key={idx} />
+      {loopCtx.loops.map((_, idx) => (
+        <LoopDisk loopIdx={idx} key={idx} />
       ))}
     </Board>
   );

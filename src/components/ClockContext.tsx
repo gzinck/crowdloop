@@ -4,7 +4,7 @@ export interface TimeSettings {
   // Global settings affecting ALL loops
   bpbar: number; // beats per bar
   bpm: number; // beats per minute
-  startTime: number; // performance.now() when loop started
+  nBars: number; // number of bars in new loops
 }
 
 interface ClockContextContents extends TimeSettings {
@@ -14,7 +14,7 @@ interface ClockContextContents extends TimeSettings {
 const defaultSettings: TimeSettings = {
   bpbar: 4,
   bpm: 90,
-  startTime: 0,
+  nBars: 1,
 };
 
 const ClockContext = React.createContext<ClockContextContents>({
@@ -28,14 +28,6 @@ export const ClockContextProvider = ({
   children: React.ReactElement;
 }): React.ReactElement => {
   const [settings, setSettings] = React.useState<TimeSettings>(defaultSettings);
-
-  // On setup, set the start time as now
-  React.useEffect(() => {
-    setSettings((ctx) => ({
-      ...ctx,
-      startTime: performance.now(),
-    }));
-  }, []);
 
   const updateClock = React.useCallback(
     (timeSettings: Partial<TimeSettings>): void => {

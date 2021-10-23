@@ -1,37 +1,17 @@
 import React from "react";
-
-enum LoopStatus {
-  PLAYING = "PLAYING",
-  STOPPED = "STOPPED",
-  RECORDING = "RECORDING",
-}
-
-export interface Loop {
-  nBeats: number; // number of beats in the loop
-  status: LoopStatus;
-  content: Float32Array;
-}
+import Loop from "../audio/loopPlayer/loop";
+import SharedAudioContext from "../audio/SharedAudioContext";
+import ClockContext from "./ClockContext";
 
 interface LoopContextContents {
   loops: (Loop | null)[];
+  recordLoop: (idx: number) => void;
 }
 
 const defaultContents: LoopContextContents = {
   // @TODO: should we support > 6 loops?
   loops: new Array<Loop | null>(6).fill(null),
-};
-
-// #TODO: remove this temporary loop demo
-defaultContents.loops[0] = {
-  nBeats: 16,
-  status: LoopStatus.PLAYING,
-  content: new Float32Array([0, 50, 127, 50, 120, 50, 120]),
-};
-
-defaultContents.loops[1] = {
-  nBeats: 6,
-  status: LoopStatus.PLAYING,
-  content: new Float32Array([0, 50, 127, 2, 120, 5, 9]),
+  recordLoop: () => null,
 };
 
 const LoopContext = React.createContext<LoopContextContents>(defaultContents);
@@ -42,14 +22,28 @@ export const LoopContextProvider = ({
   children: React.ReactElement;
 }): React.ReactElement => {
   // @TODO: add setLoops here to allow changes later on
-  const [loops] = React.useState<(Loop | null)[]>(
+  const audio = React.useContext(SharedAudioContext);
+  const time = React.useContext(ClockContext);
+  const [loops, setLoops] = React.useState<(Loop | null)[]>(
     defaultContents.loops
+  );
+
+  const recordLoop = React.useCallback(
+    (idx: number) => {
+      setLoops((loops) => {
+        const newLoops = [...loops];
+        newLoops[idx] = new Loop(audio, time);
+        return newLoops;
+      });
+    },
+    [audio, time]
   );
 
   return (
     <LoopContext.Provider
       value={{
         loops,
+        recordLoop,
       }}
     >
       {children}
