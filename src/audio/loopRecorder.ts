@@ -1,113 +1,125 @@
-import { mergeMap, Observable, Subject, tap, throwError, timer } from "rxjs";
+import { Observable, Subject, throwError, timer } from "rxjs";
 import { TimeSettings } from "../components/ClockContext";
 import { getLoopLength, getSecondsUntilStart } from "../utils/beats";
 import { SharedAudioContextContents } from "./SharedAudioContext";
 
-const schedulingTime = 0.05; // time before recording (s) at which time we should start scheduling because timing is imprecise
+export const recordingSchedulingTime = 0.05; // time before recording (s) at which time we should start scheduling because timing is imprecise
+export const recordingHead = 0.1;
+export const defaultTail = 0.1;
 
-// @TODO: do we need to add a fade-in and fade-out time?
+interface ScheduledRecording {
+  startTime: number; // in s
+  idx: number;
+  curRecorder: MediaRecorder;
+  nxtRecorder: MediaRecorder;
+}
 
-// Records audio using recursion, passing back a stream of MP3s as it goes.
-// If depth of recursion is high, must refactor this.
-/**
- *
- * @param curRecorder the recorder to record with immediately
- * @param nxtRecorder the recorder to record with after the current recording is done
- * @param length number of seconds per recording
- * @param times the number of recordings to create
- * @returns stream of MP3 blobs for playback
- */
-const recordRecursively = (
-  curRecorder: MediaRecorder,
-  nxtRecorder: MediaRecorder,
-  length: number,
-  times: number
-): Observable<Blob> => {
-  return new Observable<Blob>((sub) => {
-    if (times <= 0) sub.complete();
-    if (curRecorder.state === "recording") {
-      throw new Error("curRecorder was recording when it should be free");
-    }
-
-    curRecorder.ondataavailable = (event) => {
-      sub.next(event.data);
-      if (times === 1) sub.complete();
-    };
-    curRecorder.start();
-
-    setTimeout(() => {
-      curRecorder.stop(); // Trigger the data to be compiled into a blob
-      if (times > 1) {
-        recordRecursively(
-          nxtRecorder,
-          curRecorder,
-          length,
-          times - 1
-        ).subscribe({
-          next: (value) => sub.next(value),
-          complete: () => sub.complete(),
-        });
-      }
-    }, length * 1000);
-  });
-};
+export interface OffsetedBlob {
+  // The actual audio file in blob format
+  blob: Blob;
+  // seconds before the actual start that the recording begins
+  head: number;
+  // seconds in the actual desired part of the recording
+  length: number;
+  // index of the blob in the recording
+  idx: number;
+}
 
 export class LoopRecorder {
-  private readonly node: MediaStreamAudioSourceNode;
+  private readonly ctx: AudioContext;
   private readonly recorder1: MediaRecorder;
   private readonly recorder2: MediaRecorder;
   private isLocked: boolean = false;
-  constructor(audio: SharedAudioContextContents) {
-    if (!audio.micStream)
-      throw new Error(
-        "mic stream was not present, so could not instantiate the LoopRecorder"
-      );
 
-    this.node = audio.ctx.createMediaStreamSource(audio.micStream);
-    this.recorder1 = new MediaRecorder(audio.micStream, {
+  constructor(ctx: AudioContext, micStream: MediaStream) {
+    this.ctx = ctx;
+    this.recorder1 = new MediaRecorder(micStream, {
       mimeType: "audio/webm",
-      audioBitsPerSecond: 128000,
+      // audioBitsPerSecond: 128000,
     });
-    this.recorder2 = new MediaRecorder(audio.micStream, {
+    this.recorder2 = new MediaRecorder(micStream, {
       mimeType: "audio/webm",
-      audioBitsPerSecond: 128000,
+      // audioBitsPerSecond: 128000,
     });
   }
 
-  public isRecording(): boolean {
-    return (
-      this.isLocked ||
-      this.recorder1.state === "recording" ||
-      this.recorder2.state === "recording"
-    );
+  public getIsLocked(): boolean {
+    return this.isLocked;
   }
 
-  // Ensures nobody else uses it until we start recording
-  public lock(): void {
-    console.log("LOCKED");
-    this.isLocked = true;
-  }
-
-  // Gets an MP3 recording for the time given (in seconds)
-  public recordFor(length: number, numBlobs: number): Observable<Blob> {
-    if (
-      this.recorder1.state === "recording" ||
-      this.recorder2.state === "recording"
-    ) {
-      return throwError(
-        () =>
-          new Error("recording was in progress, so recording could not begin")
-      );
+  public record(
+    startTime: number, // when the recording should start (not considering heads)
+    totalLength: number, // combined length of the blobs starting at startTime
+    nBlobs: number, // number of recordings
+    head: number = recordingHead, // desired head size for each blob (defaults to 0.1s)
+    tail: number = defaultTail // desired tail size for each blob (defaults to 0.1s)
+  ): Observable<OffsetedBlob> {
+    if (this.isLocked) {
+      return throwError(() => new Error("recording attempted when locked"));
     }
+    this.isLocked = true;
 
-    // Start recording
-    this.isLocked = false;
-    return recordRecursively(
-      this.recorder1,
-      this.recorder2,
-      length / numBlobs,
-      numBlobs
-    );
+    const length = totalLength / nBlobs;
+    const blobs$ = new Subject<OffsetedBlob>();
+
+    const scheduled$ = new Subject<ScheduledRecording>();
+    scheduled$.subscribe((scheduled) => {
+      const curTime = this.ctx.currentTime;
+      const actualHead = scheduled.startTime - curTime;
+
+      scheduled.curRecorder.ondataavailable = (event) => {
+        blobs$.next({
+          blob: event.data,
+          head: actualHead,
+          length,
+          idx: scheduled.idx,
+        });
+
+        // If this is the last recording, finish the stream and unlock
+        if (scheduled.idx === nBlobs - 1) {
+          blobs$.complete();
+          this.isLocked = false;
+          scheduled$.complete();
+        }
+      };
+
+      scheduled.curRecorder.start();
+
+      // After actualHead + length, end this recording
+      timer((actualHead + length + tail) * 1000).subscribe(() => {
+        scheduled.curRecorder.stop();
+      });
+
+      // Start the next one if we're not at the very last
+      if (scheduled.idx + 1 < nBlobs) {
+        const nextStartTime = scheduled.startTime + length;
+        timer(
+          (nextStartTime - curTime - head - recordingSchedulingTime) * 1000
+        ).subscribe(() => {
+          scheduled$.next({
+            startTime: nextStartTime,
+            idx: scheduled.idx + 1,
+            // Swap recorders
+            curRecorder: scheduled.nxtRecorder,
+            nxtRecorder: scheduled.curRecorder,
+          });
+        });
+      }
+    });
+
+    // Schedule the first recording
+    timer(
+      (startTime - this.ctx.currentTime - head - recordingSchedulingTime) * 1000
+    ).subscribe(() => {
+      scheduled$.next({
+        startTime,
+        idx: 0,
+        curRecorder: this.recorder1,
+        nxtRecorder: this.recorder2,
+      });
+    });
+
+    return blobs$;
   }
 }
 
@@ -129,41 +141,34 @@ export class LoopRecorder {
 const recordLoop = (
   time: TimeSettings,
   audio: SharedAudioContextContents,
-  head: number,
   numBlobs: number,
-  offset$: Subject<number>
-): Observable<Blob> => {
+  head: number = recordingHead,
+  tail: number = defaultTail
+): Observable<OffsetedBlob> => {
   if (!audio.recorder1 || !audio.recorder2) {
     return throwError(
       () => new Error("recorders were not initialized prior to recording")
     );
   }
 
-  if (audio.recorder1.isRecording() && audio.recorder2.isRecording()) {
+  if (audio.recorder1.getIsLocked() && audio.recorder2.getIsLocked()) {
     return throwError(
       () =>
         new Error(
-          "both LoopRecorders are already recording, so another recording cannot be created yet"
+          "both LoopRecorders are locked, so another recording cannot be created yet"
         )
     );
   }
 
-  const startAt = getSecondsUntilStart(time, audio, head + schedulingTime) - head - schedulingTime;
-  const length = getLoopLength(time) + 2 * head; // time before and after loop
-  const rec: LoopRecorder = !audio.recorder1.isRecording()
+  const startTime =
+    getSecondsUntilStart(time, audio, head + recordingSchedulingTime) +
+    audio.ctx.currentTime;
+  const length = getLoopLength(time);
+  const rec: LoopRecorder = !audio.recorder1.getIsLocked()
     ? audio.recorder1
     : audio.recorder2;
 
-  rec.lock();
-  return timer(startAt * 1000).pipe(
-    tap(() => {
-      // Figure out how far from the start we are—
-      const shouldStartIn = getSecondsUntilStart(time, audio, 0) - head;
-      offset$.next(shouldStartIn);
-      offset$.complete();
-    }),
-    mergeMap(() => rec.recordFor(length, numBlobs))
-    );
+  return rec.record(startTime, length, numBlobs, head, tail);
 };
 
 export default recordLoop;

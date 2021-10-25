@@ -33,8 +33,8 @@ export const SharedAudioContextProvider = ({
       setContents((contents) => ({
         ...contents,
         micStream,
-        recorder1: new LoopRecorder({ ...contents, micStream }),
-        recorder2: new LoopRecorder({ ...contents, micStream }),
+        recorder1: new LoopRecorder(contents.ctx, micStream),
+        recorder2: new LoopRecorder(contents.ctx, micStream),
       }));
     });
   }, []);

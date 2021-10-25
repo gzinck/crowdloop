@@ -1,9 +1,11 @@
 import { Subject, timer } from "rxjs";
 import { TimeSettings } from "../../components/ClockContext";
-import { getSecondsUntilStart } from "../../utils/beats";
+import { getLoopLength, getSecondsUntilStart } from "../../utils/beats";
+import { OffsetedBlob } from "../loopRecorder";
 import { SharedAudioContextContents } from "../SharedAudioContext";
+import { recordingHead } from "../loopRecorder";
 
-const previewSize = 100;
+const previewSize = 200;
 const schedulingTime = 0.05; // time in s before loop start at which point we should start scheduling things
 
 interface AudioStartEvent {
@@ -11,6 +13,15 @@ interface AudioStartEvent {
   startTime: number; // time in s in the AudioContext when audio should start
   curGainNode: GainNode;
   prvGainNode: GainNode;
+}
+
+interface OffsetedBuffer {
+  // A decoded AudioBuffer
+  buff: AudioBuffer;
+  // seconds before the actual start that the recording begins
+  head: number;
+  // seconds in the actual desired part of the recording
+  length: number;
 }
 
 interface LoopProgress {
@@ -21,29 +32,25 @@ interface LoopProgress {
 
 // VISUAL MODEL OF HOW A LOOP BUFFER WORKS:
 //
-// |--------|------|----------------------------------|------|
-// | Offset | Head | Main recording                   | Tail |
-// |--------|------|----------------------------------|------|
-// |----------------------|----------|----------|------------|
-// | Buffer 1             | Buffer 2 | Buffer 3 | Buffer 4   |
-// |----------------------|----------|----------|------------|
+// |------|--------------------------------|------|
+// | Head | Main recording                 | Tail |
+// |------|--------------------------------|------|
+// | B1H  | Buffer 1 | B1T  |---------------------|
+// |----------| B2H  | Buffer 2 | B2T  |----------|
+// |---------------------| B3H  | Buffer 3 | B3T  |
 //
 // When played, the main recording of one instance should be directly adjacent to the
 // main recording of another instance.
 
 class LoopBuffer {
-  private readonly buffers: (AudioBuffer | null)[];
+  private readonly buffers: (OffsetedBuffer | null)[];
+  private readonly heads: number[];
   public readonly preview: Float32Array = new Float32Array(previewSize).fill(0);
   private readonly time: TimeSettings;
-  private readonly head: number;
   private readonly audio: SharedAudioContextContents;
   private gainNode1: GainNode;
   private gainNode2: GainNode;
   private stopped: boolean = false;
-  // offset for playback caused because of timing issues with recording.
-  // js does not time the start of MediaRecorder properly, so we start recording
-  // before the actual recording is supposed to begin
-  private offset: number = 0;
 
   /**
    *
@@ -56,13 +63,12 @@ class LoopBuffer {
   constructor(
     audio: SharedAudioContextContents,
     time: TimeSettings,
-    head: number,
     nBuffers: number
   ) {
     this.audio = audio;
     this.time = time;
-    this.head = head;
     this.buffers = new Array(nBuffers).fill(null);
+    this.heads = new Array(nBuffers).fill(0);
 
     // Gain nodes handle the fade in and out
     this.gainNode1 = audio.ctx.createGain();
@@ -74,29 +80,37 @@ class LoopBuffer {
     this.gainNode2.connect(audio.ctx.destination);
   }
 
-  public setOffset(offset: number) {
-    this.offset = offset;
-  }
-
-  public addBlob(blob: Blob, idx: number) {
+  public addBlob({ blob, idx, length, head }: OffsetedBlob): Promise<any> {
     if (idx < 0 || idx >= this.buffers.length) {
       throw new Error("tried to add an audio buffer out of range: " + idx);
     }
 
-    blob.arrayBuffer().then((buff) => {
+    return blob.arrayBuffer().then((buff) => {
       this.audio.ctx.decodeAudioData(buff, (audioBuffer) => {
-        this.buffers[idx] = audioBuffer;
+        this.buffers[idx] = {
+          buff: audioBuffer,
+          length,
+          head,
+        };
         const floats = audioBuffer.getChannelData(0);
 
-        // add this blob to the preview
-        // @TODO: improve this preview when considering the head/tail
-        const buffPreviewSize = previewSize / this.buffers.length;
-        const startIdx = buffPreviewSize * idx;
-        for (let i = startIdx; i < startIdx + buffPreviewSize; i++) {
-          const j = Math.floor(
-            (i - startIdx) * (floats.length / buffPreviewSize)
-          );
-          this.preview[i] = floats[j];
+        // create a preview by sampling the floats
+        const destSize = previewSize / this.buffers.length;
+        const destStart = destSize * idx;
+
+        const sourceSize = audioBuffer.sampleRate * length;
+        const sourceStart = Math.floor(audioBuffer.sampleRate * head);
+        console.log(sourceStart, sourceSize, floats.length);
+
+        for (
+          let destPos = destStart;
+          destPos < destStart + destSize;
+          destPos++
+        ) {
+          const sourcePos =
+            Math.floor((destPos - destStart) * (sourceSize / destSize)) +
+            sourceStart;
+          this.preview[destPos] = floats[sourcePos];
         }
       });
     });
@@ -112,105 +126,92 @@ class LoopBuffer {
   public start() {
     this.stopped = false;
     const events$ = new Subject<AudioStartEvent>();
-
-    const startLoop = (curGainNode: GainNode, prvGainNode: GainNode) => {
-      const secondsUntilNxtStart = getSecondsUntilStart(
-        this.time,
-        this.audio,
-        schedulingTime + this.head
-      );
-      const nxtStartTime =
-        this.audio.ctx.currentTime + secondsUntilNxtStart - this.head;
-
-      timer(
-        (secondsUntilNxtStart - schedulingTime - this.head) * 1000
-      ).subscribe(() => {
-        events$.next({
-          idx: 0,
-          startTime: nxtStartTime,
-          curGainNode,
-          prvGainNode,
-        });
-      });
-    };
+    const loopLength = getLoopLength(this.time);
+    // Assumption: all buffers are the same size.
+    // Could just use the buffers' lengths, but what if not all buffers are loaded yet?
+    const buffLength = loopLength / this.buffers.length;
 
     // NOTE: startTime ALWAYS refers to when the main part of the loop starts,
-    // diregarding the head and the offset (if applicable).
+    // diregarding the head
 
     const sub = events$.subscribe(
       ({ idx, startTime, curGainNode, prvGainNode }) => {
         const buffer = this.buffers[idx];
+
+        // Schedule the next change right away
+        const nxtIdx = (idx + 1) % this.buffers.length;
+        const nxtHead = this.buffers[nxtIdx]?.head || recordingHead;
+        const nxtStartTime =
+          nxtIdx === 0
+            ? // if this is the start of the loop, to avoid drift with floating point,
+              // manually calculate the audio start
+              getSecondsUntilStart(this.time, this.audio) +
+              this.audio.ctx.currentTime
+            : // otherwise, just get it the lazy way
+              startTime + buffLength;
+
+        const timeUntilNext =
+          nxtStartTime - this.audio.ctx.currentTime - nxtHead - schedulingTime;
+        timer(timeUntilNext * 1000).subscribe(() => {
+          events$.next({
+            idx: nxtIdx,
+            startTime: nxtStartTime,
+            curGainNode: prvGainNode,
+            prvGainNode: curGainNode,
+          });
+        });
+
+        // Swap the gain nodes
+        let fadeInTime = startTime - (buffer?.head || recordingHead);
+        let offset: number | undefined = undefined;
+        if (fadeInTime < this.audio.ctx.currentTime) {
+          offset = this.audio.ctx.currentTime - fadeInTime;
+          fadeInTime = this.audio.ctx.currentTime;
+        }
+
+        prvGainNode.gain.setValueAtTime(1, fadeInTime);
+        prvGainNode.gain.linearRampToValueAtTime(0, startTime);
+
+        curGainNode.gain.setValueAtTime(0, fadeInTime);
+        curGainNode.gain.linearRampToValueAtTime(1, startTime);
+
+        // If the buffer is empty, simply wait until the next buffer begins
+        // (already scheduled)
         if (buffer === null) {
-          // If the buffer is currently empty, bring volume to zero before we were supposed to start
-          curGainNode.gain.setValueAtTime(1, this.audio.ctx.currentTime);
-          curGainNode.gain.linearRampToValueAtTime(0, startTime);
-          // Restart the loop at the next iteration
-          startLoop(curGainNode, prvGainNode);
+          console.error("buffer was null in position: " + idx);
           return;
         }
 
+        // Create our new buffer source
         const source = this.audio.ctx.createBufferSource();
-        source.buffer = buffer;
+        source.buffer = buffer.buff;
         source.connect(curGainNode);
 
-        if (idx === 0) {
-          // Fade out old loop
-          prvGainNode.gain.setValueAtTime(1, this.audio.ctx.currentTime);
-          prvGainNode.gain.linearRampToValueAtTime(0, startTime);
-
-          if (!this.stopped) {
-            // Fade in new loop
-            curGainNode.gain.setValueAtTime(0, this.audio.ctx.currentTime);
-            curGainNode.gain.linearRampToValueAtTime(1, startTime);
-
-            source.start(startTime - this.head, this.offset);
-
-            // Start the next one when this one is over
-            // Subtract the offset because that's where we start in the buffer
-            // Subtract a tiny delta because there's a blip in the audio otherwise
-            const timeUntilNext =
-              source.buffer.length / this.audio.ctx.sampleRate -
-              this.offset -
-              0.00001; // in s
-            timer(timeUntilNext * 1000).subscribe(() => {
-              const nextIdx = (idx + 1) % this.buffers.length;
-              events$.next({
-                idx: nextIdx,
-                startTime: timeUntilNext + startTime,
-                curGainNode,
-                prvGainNode,
-              });
-            });
-          } else {
-            sub.unsubscribe();
-          }
-        } else if (idx === this.buffers.length - 1) {
-          // Start the loop
-          source.start(startTime - this.head);
-
-          // Restart the loop when it is appropriate and swap gain nodes
-          startLoop(prvGainNode, curGainNode);
-        } else {
-          // No fade out, just start the loop right off
-          source.start(startTime - this.head);
-
-          // Start the next one when this one is over
-          const timeUntilNext =
-            source.buffer.length / this.audio.ctx.sampleRate; // in s
-          timer(timeUntilNext * 1000).subscribe(() => {
-            const nextIdx = (idx + 1) % this.buffers.length;
-            events$.next({
-              idx: nextIdx,
-              startTime: timeUntilNext + startTime,
-              curGainNode,
-              prvGainNode,
-            });
-          });
-        }
+        // Start playing or stop everything here
+        if (!this.stopped) source.start(fadeInTime, offset);
+        else sub.unsubscribe();
       }
     );
 
-    startLoop(this.gainNode1, this.gainNode2);
+    // Schedule the first buffer
+    const firstHead = this.buffers[0]?.head || recordingHead;
+    const timeUntilFirst = getSecondsUntilStart(
+      this.time,
+      this.audio,
+      schedulingTime
+    );
+    const firstStartTime = timeUntilFirst + this.audio.ctx.currentTime;
+
+    timer((timeUntilFirst - firstHead - schedulingTime) * 1000).subscribe(
+      () => {
+        events$.next({
+          idx: 0,
+          startTime: firstStartTime,
+          curGainNode: this.gainNode1,
+          prvGainNode: this.gainNode2,
+        });
+      }
+    );
   }
 
   public getProgress(): LoopProgress {

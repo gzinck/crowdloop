@@ -39,7 +39,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
       case LoopStatus.RECORDING:
         backgroundColour = theme.palette.recording.recording;
     }
-  } 
+  }
 
   return (
     <Disk onClick={() => loopCtx.recordLoop(loopIdx)}>
