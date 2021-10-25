@@ -22,6 +22,7 @@ class Loop {
 
   constructor(audio: SharedAudioContextContents, time: TimeSettings) {
     this.time = time;
+    console.log("WE HAVE TIME: ", time);
 
     const numBlobs = getLoopLength(time) > 4 ? 4 : 2;
     this.buffer = new LoopBuffer(audio, time, numBlobs);

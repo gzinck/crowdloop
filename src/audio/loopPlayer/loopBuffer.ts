@@ -100,7 +100,6 @@ class LoopBuffer {
 
         const sourceSize = audioBuffer.sampleRate * length;
         const sourceStart = Math.floor(audioBuffer.sampleRate * head);
-        console.log(sourceStart, sourceSize, floats.length);
 
         for (
           let destPos = destStart;

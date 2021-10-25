@@ -19,6 +19,11 @@ const Disk = styled.div`
   justify-content: center;
 `;
 
+const ShadowedSVG = styled.svg`
+  -webkit-filter: drop-shadow( 1px 3px 2px rgba(0, 0, 0, .7));
+  filter: drop-shadow( 1px 3px 2px rgba(0, 0, 0, .7));
+`;
+
 const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
   const loop = loopCtx.loops[loopIdx];
@@ -43,7 +48,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
 
   return (
     <Disk onClick={() => loopCtx.recordLoop(loopIdx)}>
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ShadowedSVG viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}
         {loop && (
@@ -63,7 +68,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
             strokeWidth={2}
           />
         )}
-      </svg>
+      </ShadowedSVG>
     </Disk>
   );
 };

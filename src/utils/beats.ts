@@ -29,3 +29,16 @@ export const getLoopLength = (time: TimeSettings): number => {
   const nBeats = time.bpbar * time.nBars;
   return nBeats / (time.bpm / 60);
 };
+
+/**
+ * Gets how far into the current beat we are, normalized to [0, 1).
+ * @param time settings for the global time context
+ * @param audio the audio context we are working in
+ * @returns [beatProgress, beatNum] where beatProgress is in [0, 1) and
+ * beatNum is 0 indexed relative to the loop length
+ */
+export const getBeatProgress = (time: TimeSettings, audio: SharedAudioContextContents): [number, number] => {
+  const deltaTime = audio.ctx.currentTime - audio.startTime; // in s
+  const beat = deltaTime * (time.bpm / 60);
+  return [beat % 1, Math.floor(beat % time.bpbar)];
+};
