@@ -76,7 +76,7 @@ class LoopBuffer {
     this.gainNode2.connect(audio.ctx.destination);
   }
 
-  public addBlob({ blob, idx, length, head }: OffsetedBlob): Promise<any> {
+  public addBlob({ blob, idx, length, head }: OffsetedBlob): Promise<void> {
     if (idx < 0 || idx >= this.buffers.length) {
       throw new Error(`tried to add an audio buffer out of range: ${idx}`);
     }
@@ -109,11 +109,11 @@ class LoopBuffer {
   /**
    * Stops the loop (if it was previously started)
    */
-  public stop() {
+  public stop(): void {
     this.stopped = true;
   }
 
-  public start() {
+  public start(): void {
     this.stopped = false;
     const events$ = new Subject<AudioStartEvent>();
     const loopLength = getLoopLength(this.time);

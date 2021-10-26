@@ -24,3 +24,10 @@ yarn-error.log*
 
 # editors
 *.swp
+
+# because prod uses a v1 lockfile, which is different
+# TODO: deploy with node 16
+package-lock.json
+
+# firebase
+/.firebase

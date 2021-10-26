@@ -11,7 +11,7 @@ const theme = {
       contrastText: '#FFF',
       // fadedLevel should be in [0, 1) where 0 is the lightest and 1
       // is the darkest. Uses an exponential for fading quickly to dark
-      flashing: (fadedLevel: number, curBeat = 1) => {
+      flashing: (fadedLevel: number, curBeat = 1): string => {
         const maxVal = curBeat === 0 ? 100 : 50;
         const colour = maxVal - (maxVal - 20) * Math.sqrt(fadedLevel);
         return `rgb(${colour}, ${colour}, ${colour})`;
@@ -22,7 +22,7 @@ const theme = {
       recording: '#b02000',
     },
   },
-  padding: (multiplier = 1) => `${multiplier * 0.5}rem`,
+  padding: (multiplier = 1): string => `${multiplier * 0.5}rem`,
 };
 
 export default theme;

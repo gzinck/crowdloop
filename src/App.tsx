@@ -7,7 +7,7 @@ import { GRANT_MIC_ROUTE, LOOP_BOARD_ROUTE } from './routes';
 import GrantMicPage from './components/grantMicPage/GrantMicPage';
 import { SharedAudioContextProvider } from './audio/SharedAudioContext';
 
-function App() {
+function App(): React.ReactElement {
   return (
     <ClockContextProvider>
       <SharedAudioContextProvider>
