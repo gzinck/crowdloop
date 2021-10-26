@@ -8,7 +8,7 @@ import ClockContext from '../ClockContext';
 
 const Board = styled.div`
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 5rem);
   display: flex;
   flex-wrap: wrap;
   align-content: center;

@@ -1,17 +1,28 @@
 import React from 'react';
+import styled from 'styled-components';
 import LoopContext from '../LoopContext';
 import FlashingBackground from './FlashingBackground';
 import LoopDisk from './loopDisk/LoopDisk';
+import TimeBar from './timeBar/TimeBar';
+
+const Screen = styled.div`
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+`;
 
 const LoopBoard = (): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
 
   return (
-    <FlashingBackground>
-      {loopCtx.loops.map((_, idx) => (
-        <LoopDisk loopIdx={idx} key={idx} />
-      ))}
-    </FlashingBackground>
+    <Screen>
+      <TimeBar />
+      <FlashingBackground>
+        {loopCtx.loops.map((_, idx) => (
+          <LoopDisk loopIdx={idx} key={idx} />
+        ))}
+      </FlashingBackground>
+    </Screen>
   );
 };
 
