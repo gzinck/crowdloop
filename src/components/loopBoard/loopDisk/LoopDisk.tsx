@@ -1,11 +1,11 @@
-import React from "react";
-import styled from "styled-components";
-import theme from "../../../theme";
-import Sector from "./Sector";
-import useRefresh from "../../../hooks/useRefresh";
-import LoopVis from "./LoopVis";
-import LoopContext from "../../LoopContext";
-import { LoopStatus } from "../../../audio/loopPlayer/loop";
+import React from 'react';
+import styled from 'styled-components';
+import theme from '../../../theme';
+import Sector from './Sector';
+import useRefresh from '../../../hooks/useRefresh';
+import LoopVis from './LoopVis';
+import LoopContext from '../../LoopContext';
+import { LoopStatus } from '../../../audio/loopPlayer/loop';
 
 interface Props {
   loopIdx: number;
@@ -20,8 +20,8 @@ const Disk = styled.div`
 `;
 
 const ShadowedSVG = styled.svg`
-  -webkit-filter: drop-shadow( 1px 3px 2px rgba(0, 0, 0, .7));
-  filter: drop-shadow( 1px 3px 2px rgba(0, 0, 0, .7));
+  -webkit-filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
+  filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
 `;
 
 const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
@@ -52,11 +52,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}
         {loop && (
-          <LoopVis
-            radius={50}
-            shape={loop.buffer.preview}
-            fill={theme.palette.primary.dark}
-          />
+          <LoopVis radius={50} shape={loop.buffer.preview} fill={theme.palette.primary.dark} />
         )}
         {/* Show the current position in the loop with a circling cursor */}
         {currAngle !== null && (

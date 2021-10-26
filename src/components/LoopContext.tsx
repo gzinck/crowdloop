@@ -1,7 +1,7 @@
-import React from "react";
-import Loop from "../audio/loopPlayer/loop";
-import SharedAudioContext from "../audio/SharedAudioContext";
-import ClockContext from "./ClockContext";
+import React from 'react';
+import Loop from '../audio/loopPlayer/loop';
+import SharedAudioContext from '../audio/SharedAudioContext';
+import ClockContext from './ClockContext';
 
 interface LoopContextContents {
   loops: (Loop | null)[];
@@ -24,9 +24,7 @@ export const LoopContextProvider = ({
   // @TODO: add setLoops here to allow changes later on
   const audio = React.useContext(SharedAudioContext);
   const time = React.useContext(ClockContext);
-  const [loops, setLoops] = React.useState<(Loop | null)[]>(
-    defaultContents.loops
-  );
+  const [loops, setLoops] = React.useState<(Loop | null)[]>(defaultContents.loops);
 
   const recordLoop = React.useCallback(
     (idx: number) => {
@@ -36,7 +34,7 @@ export const LoopContextProvider = ({
         return newLoops;
       });
     },
-    [audio, time]
+    [audio, time],
   );
 
   return (

@@ -1,11 +1,11 @@
-import React from "react";
-import { ClockContextProvider } from "./components/ClockContext";
-import LoopBoard from "./components/loopBoard/LoopBoard";
-import { LoopContextProvider } from "./components/LoopContext";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
-import { GRANT_MIC_ROUTE, LOOP_BOARD_ROUTE } from "./routes";
-import GrantMicPage from "./components/grantMicPage/GrantMicPage";
-import { SharedAudioContextProvider } from "./audio/SharedAudioContext";
+import React from 'react';
+import { ClockContextProvider } from './components/ClockContext';
+import LoopBoard from './components/loopBoard/LoopBoard';
+import { LoopContextProvider } from './components/LoopContext';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { GRANT_MIC_ROUTE, LOOP_BOARD_ROUTE } from './routes';
+import GrantMicPage from './components/grantMicPage/GrantMicPage';
+import { SharedAudioContextProvider } from './audio/SharedAudioContext';
 
 function App() {
   return (

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 export interface TimeSettings {
   // Global settings affecting ALL loops
@@ -29,15 +29,12 @@ export const ClockContextProvider = ({
 }): React.ReactElement => {
   const [settings, setSettings] = React.useState<TimeSettings>(defaultSettings);
 
-  const updateClock = React.useCallback(
-    (timeSettings: Partial<TimeSettings>): void => {
-      setSettings((ctx) => ({
-        ...ctx,
-        ...timeSettings,
-      }));
-    },
-    []
-  );
+  const updateClock = React.useCallback((timeSettings: Partial<TimeSettings>): void => {
+    setSettings((ctx) => ({
+      ...ctx,
+      ...timeSettings,
+    }));
+  }, []);
 
   return (
     <ClockContext.Provider

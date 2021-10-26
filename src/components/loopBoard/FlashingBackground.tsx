@@ -1,10 +1,10 @@
-import React from "react";
-import styled from "styled-components";
-import SharedAudioContext from "../../audio/SharedAudioContext";
-import useRefresh from "../../hooks/useRefresh";
-import theme from "../../theme";
-import { getBeatProgress } from "../../utils/beats";
-import ClockContext from "../ClockContext";
+import React from 'react';
+import styled from 'styled-components';
+import SharedAudioContext from '../../audio/SharedAudioContext';
+import useRefresh from '../../hooks/useRefresh';
+import theme from '../../theme';
+import { getBeatProgress } from '../../utils/beats';
+import ClockContext from '../ClockContext';
 
 const Board = styled.div`
   width: 100%;
@@ -15,11 +15,7 @@ const Board = styled.div`
   justify-content: center;
 `;
 
-const FlashingBackground = ({
-  children,
-}: {
-  children: React.ReactNode;
-}): React.ReactElement => {
+const FlashingBackground = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const audio = React.useContext(SharedAudioContext);
   const time = React.useContext(ClockContext);
 

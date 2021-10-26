@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 interface Props {
   radius: number;
@@ -17,21 +17,21 @@ const Sector = (props: Props): React.ReactElement => {
   const angleEnd = -props.angleEnd + Math.PI / 2;
 
   const startX = props.radius * Math.cos(angleStart);
-  const startY = -props.radius * Math.sin(angleStart)
+  const startY = -props.radius * Math.sin(angleStart);
   const endX = props.radius * Math.cos(angleEnd);
-  const endY = -props.radius * Math.sin(angleEnd)
+  const endY = -props.radius * Math.sin(angleEnd);
 
-  const bigArc = ((props.angleEnd - props.angleStart) % (2* Math.PI)) > Math.PI ? 1 : 0;
-  
+  const bigArc = (props.angleEnd - props.angleStart) % (2 * Math.PI) > Math.PI ? 1 : 0;
+
   return (
     <g
       transform={`translate(${props.posX || props.radius}, ${props.posY || props.radius})`}
-      stroke={props.stroke || "none"}
+      stroke={props.stroke || 'none'}
       strokeWidth={props.strokeWidth || 0}
     >
       <path
         d={`M 0,0 L ${startX} ${startY} A ${props.radius} ${props.radius} 0 ${bigArc} 1 ${endX} ${endY} Z`}
-        fill={props.fill || "none"}
+        fill={props.fill || 'none'}
       />
     </g>
   );

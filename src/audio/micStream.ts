@@ -3,7 +3,7 @@
 export const getMicPermissions = (): Promise<MediaStream> => {
   if (!navigator.mediaDevices) {
     return new Promise(() => {
-      throw new Error("Device does not support getting microphone audio");
+      throw new Error('Device does not support getting microphone audio');
     });
   }
   return navigator.mediaDevices
@@ -12,7 +12,7 @@ export const getMicPermissions = (): Promise<MediaStream> => {
       return stream;
     })
     .catch((err) => {
-      throw new Error("Error getting microphone audio stream: " + err);
+      throw new Error(`Error getting microphone audio stream: ${err}`);
     });
 };
 
@@ -20,20 +20,18 @@ export const getMicPermissions = (): Promise<MediaStream> => {
 // always cached there.
 export const hasMicPermissions = (): Promise<boolean> => {
   if (!navigator.mediaDevices) {
-    console.error("Device does not support getting microphone audio");
+    console.error('Device does not support getting microphone audio');
     return new Promise((r) => r(false));
   }
   return navigator.mediaDevices
     .enumerateDevices()
     .then((devices) => {
       return devices.reduce((acc, currDevice) => {
-        return (
-          acc || (currDevice.kind === "audioinput" && currDevice.label !== "")
-        );
+        return acc || (currDevice.kind === 'audioinput' && currDevice.label !== '');
       }, false);
     })
     .catch((err) => {
-      console.error("Error finding out if we have mic permissions: " + err);
+      console.error(`Error finding out if we have mic permissions: ${err}`);
       return false;
     });
 };

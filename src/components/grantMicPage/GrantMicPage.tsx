@@ -1,10 +1,10 @@
-import React from "react";
-import { useHistory } from "react-router";
-import styled from "styled-components";
-import SharedAudioContext from "../../audio/SharedAudioContext";
-import { LOOP_BOARD_ROUTE } from "../../routes";
-import theme from "../../theme";
-import Button from "../generic/Button";
+import React from 'react';
+import { useHistory } from 'react-router';
+import styled from 'styled-components';
+import SharedAudioContext from '../../audio/SharedAudioContext';
+import { LOOP_BOARD_ROUTE } from '../../routes';
+import theme from '../../theme';
+import Button from '../generic/Button';
 
 const Background = styled.div`
   width: 100%;

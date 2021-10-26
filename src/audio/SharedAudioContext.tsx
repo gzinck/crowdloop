@@ -1,6 +1,6 @@
-import React from "react";
-import { LoopRecorder } from "./loopRecorder";
-import { getMicPermissions, hasMicPermissions } from "./micStream";
+import React from 'react';
+import { LoopRecorder } from './loopRecorder';
+import { getMicPermissions, hasMicPermissions } from './micStream';
 
 export interface SharedAudioContextContents {
   ctx: AudioContext;
@@ -17,16 +17,14 @@ const defaultContents: SharedAudioContextContents = {
   getMicStream: () => null,
 };
 
-const SharedAudioContext =
-  React.createContext<SharedAudioContextContents>(defaultContents);
+const SharedAudioContext = React.createContext<SharedAudioContextContents>(defaultContents);
 
 export const SharedAudioContextProvider = ({
   children,
 }: {
   children: React.ReactElement;
 }): React.ReactElement => {
-  const [contents, setContents] =
-    React.useState<SharedAudioContextContents>(defaultContents);
+  const [contents, setContents] = React.useState<SharedAudioContextContents>(defaultContents);
 
   const getMicStream = React.useCallback(() => {
     return getMicPermissions().then((micStream) => {

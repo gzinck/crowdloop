@@ -1,18 +1,15 @@
-import { timer } from "rxjs";
-import { TimeSettings } from "../../components/ClockContext";
-import { getLoopLength, getSecondsUntilStart } from "../../utils/beats";
-import recordLoop, {
-  recordingHead,
-  recordingSchedulingTime,
-} from "../loopRecorder";
-import { SharedAudioContextContents } from "../SharedAudioContext";
-import LoopBuffer from "./loopBuffer";
+import { timer } from 'rxjs';
+import { TimeSettings } from '../../components/ClockContext';
+import { getLoopLength, getSecondsUntilStart } from '../../utils/beats';
+import recordLoop, { recordingHead, recordingSchedulingTime } from '../loopRecorder';
+import { SharedAudioContextContents } from '../SharedAudioContext';
+import LoopBuffer from './loopBuffer';
 
 export enum LoopStatus {
-  PLAYING = "PLAYING",
-  STOPPED = "STOPPED",
-  RECORDING = "RECORDING",
-  PENDING = "PENDING",
+  PLAYING = 'PLAYING',
+  STOPPED = 'STOPPED',
+  RECORDING = 'RECORDING',
+  PENDING = 'PENDING',
 }
 
 class Loop {
@@ -22,7 +19,7 @@ class Loop {
 
   constructor(audio: SharedAudioContextContents, time: TimeSettings) {
     this.time = time;
-    console.log("WE HAVE TIME: ", time);
+    console.log('WE HAVE TIME: ', time);
 
     const numBlobs = getLoopLength(time) > 4 ? 4 : 2;
     this.buffer = new LoopBuffer(audio, time, numBlobs);
@@ -38,14 +35,8 @@ class Loop {
     });
 
     // Change status to recording when recording
-    const timeToStart = getSecondsUntilStart(
-      time,
-      audio,
-      recordingHead + recordingSchedulingTime
-    );
-    timer(timeToStart * 1000).subscribe(
-      () => (this.status = LoopStatus.RECORDING)
-    );
+    const timeToStart = getSecondsUntilStart(time, audio, recordingHead + recordingSchedulingTime);
+    timer(timeToStart * 1000).subscribe(() => (this.status = LoopStatus.RECORDING));
   }
 }
 

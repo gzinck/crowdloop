@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 const maxNum = 1;
 const minNum = -1;
@@ -21,17 +21,15 @@ const LoopVis = (props: Props): React.ReactElement => {
     const y = -(0.2 + 0.8 * normalizedVal) * props.radius * Math.sin(angle);
 
     // Move to this position if this is the first position, else make the line
-    return acc === "" ? `M ${x}, ${y}` : `${acc} L ${x} ${y}`;
-  }, "");
+    return acc === '' ? `M ${x}, ${y}` : `${acc} L ${x} ${y}`;
+  }, '');
   return (
     <g
-      transform={`translate(${props.posX || props.radius}, ${
-        props.posY || props.radius
-      })`}
-      stroke={props.stroke || "none"}
+      transform={`translate(${props.posX || props.radius}, ${props.posY || props.radius})`}
+      stroke={props.stroke || 'none'}
       strokeWidth={props.strokeWidth || 0}
     >
-      <path d={`${visPath} Z`} fill={props.fill || "none"} />
+      <path d={`${visPath} Z`} fill={props.fill || 'none'} />
     </g>
   );
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 const useRefresh = (ms: number) => {
   const [, setCtr] = React.useState(0);
@@ -6,7 +6,7 @@ const useRefresh = (ms: number) => {
     const sub = setInterval(() => {
       setCtr((ctr) => ctr + 1);
     }, ms);
-    
+
     return () => clearInterval(sub);
   }, [ms]);
 };

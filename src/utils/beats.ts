@@ -1,5 +1,5 @@
-import { SharedAudioContextContents } from "../audio/SharedAudioContext";
-import { TimeSettings } from "../components/ClockContext";
+import { SharedAudioContextContents } from '../audio/SharedAudioContext';
+import { TimeSettings } from '../components/ClockContext';
 
 /**
  * Gets the the number of seconds before the loop should start.
@@ -11,7 +11,7 @@ import { TimeSettings } from "../components/ClockContext";
 export const getSecondsUntilStart = (
   time: TimeSettings,
   audio: SharedAudioContextContents,
-  minTime: number = 0
+  minTime = 0,
 ): number => {
   const deltaTime = audio.ctx.currentTime - audio.startTime; // in s
   const loopLength = getLoopLength(time);
@@ -37,7 +37,10 @@ export const getLoopLength = (time: TimeSettings): number => {
  * @returns [beatProgress, beatNum] where beatProgress is in [0, 1) and
  * beatNum is 0 indexed relative to the loop length
  */
-export const getBeatProgress = (time: TimeSettings, audio: SharedAudioContextContents): [number, number] => {
+export const getBeatProgress = (
+  time: TimeSettings,
+  audio: SharedAudioContextContents,
+): [number, number] => {
   const deltaTime = audio.ctx.currentTime - audio.startTime; // in s
   const beat = deltaTime * (time.bpm / 60);
   return [beat % 1, Math.floor(beat % time.bpbar)];
