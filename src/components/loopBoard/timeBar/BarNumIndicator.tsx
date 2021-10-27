@@ -1,10 +1,19 @@
 import React from 'react';
+import styled from 'styled-components';
 import SharedAudioContext from '../../../audio/SharedAudioContext';
 import useRefresh from '../../../hooks/useRefresh';
 import theme from '../../../theme';
 import { getLoopLength, getSecondsUntilStart } from '../../../utils/beats';
 import ClockContext from '../../ClockContext';
 import Sector from '../loopDisk/Sector';
+
+const size = '4rem';
+
+const SVG = styled.svg`
+  width: ${size};
+  height: ${size};
+  margin: 0.5rem;
+`;
 
 const BarNumIndicator = (): React.ReactElement => {
   useRefresh(20);
@@ -14,7 +23,7 @@ const BarNumIndicator = (): React.ReactElement => {
   const length = getLoopLength(time);
   const curAngle = ((length - tts) / length) * 2 * Math.PI;
   return (
-    <svg width="3rem" height="3rem" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <SVG viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <circle cx="50" cy="50" r="50" fill={theme.palette.primary.dark} />
       <Sector
         radius={50}
@@ -33,7 +42,7 @@ const BarNumIndicator = (): React.ReactElement => {
       >
         {time.nBars}
       </text>
-    </svg>
+    </SVG>
   );
 };
 

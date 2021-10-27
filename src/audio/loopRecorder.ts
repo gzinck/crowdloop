@@ -15,6 +15,22 @@ interface ScheduledRecording {
   nxtRecorder: MediaRecorder;
 }
 
+export enum RecordingEventType {
+  STARTED = 'STARTED',
+  SUCCESS = 'SUCCESS',
+}
+
+interface RecordingSuccessEvent {
+  type: RecordingEventType.SUCCESS;
+  recording: OffsetedBlob;
+}
+
+interface RecordingStartedEvent {
+  type: RecordingEventType.STARTED;
+}
+
+type RecordingEvent = RecordingSuccessEvent | RecordingStartedEvent;
+
 export interface OffsetedBlob {
   // The actual audio file in blob format
   blob: Blob;
@@ -33,15 +49,12 @@ export class LoopRecorder {
   private isLocked = false;
 
   constructor(ctx: AudioContext, micStream: MediaStream) {
+    let mimeType = 'audio/mp4';
+    if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+
     this.ctx = ctx;
-    this.recorder1 = new MediaRecorder(micStream, {
-      mimeType: 'audio/webm',
-      // audioBitsPerSecond: 128000,
-    });
-    this.recorder2 = new MediaRecorder(micStream, {
-      mimeType: 'audio/webm',
-      // audioBitsPerSecond: 128000,
-    });
+    this.recorder1 = new MediaRecorder(micStream, { mimeType });
+    this.recorder2 = new MediaRecorder(micStream, { mimeType });
   }
 
   public getIsLocked(): boolean {
@@ -54,14 +67,14 @@ export class LoopRecorder {
     nBlobs: number, // number of recordings
     head: number = recordingHead, // desired head size for each blob (defaults to 0.1s)
     tail: number = defaultTail, // desired tail size for each blob (defaults to 0.1s)
-  ): Observable<OffsetedBlob> {
+  ): Observable<RecordingEvent> {
     if (this.isLocked) {
       return throwError(() => new Error('recording attempted when locked'));
     }
     this.isLocked = true;
 
     const length = totalLength / nBlobs;
-    const blobs$ = new Subject<OffsetedBlob>();
+    const result$ = new Subject<RecordingEvent>();
 
     const scheduled$ = new Subject<ScheduledRecording>();
     scheduled$.subscribe((scheduled) => {
@@ -69,32 +82,26 @@ export class LoopRecorder {
       const curHead = scheduled.startTime - curTime;
       let actualHead = 0;
       const curTimestamp = performance.now();
-      let startTime = 0;
       // When actually start, record the time using the timestamp of the start event
       scheduled.curRecorder.onstart = (event) => {
-        startTime = event.timeStamp;
         // This is the amount of the recording to skip at the start
         actualHead = curHead - (event.timeStamp - curTimestamp) / 1000;
       };
 
-      scheduled.curRecorder.onstop = (event) => {
-        console.log('Length of recording: ', event.timeStamp - startTime);
-        console.log('Event timestamp:', event.timeStamp, ', Curr timestamp:', performance.now());
-        console.log('Head:', actualHead, ', length:', length, ', tail:', tail);
-      };
-
       scheduled.curRecorder.ondataavailable = (event) => {
-        console.log('WOOOO', event);
-        blobs$.next({
-          blob: event.data,
-          head: actualHead,
-          length,
-          idx: scheduled.idx,
+        result$.next({
+          type: RecordingEventType.SUCCESS,
+          recording: {
+            blob: event.data,
+            head: actualHead,
+            length,
+            idx: scheduled.idx,
+          },
         });
 
         // If this is the last recording, finish the stream and unlock
         if (scheduled.idx === nBlobs - 1) {
-          blobs$.complete();
+          result$.complete();
           this.isLocked = false;
           scheduled$.complete();
         }
@@ -121,14 +128,11 @@ export class LoopRecorder {
         });
       }
     });
-    console.log(
-      'First recording',
-      (startTime - this.ctx.currentTime - head - recordingSchedulingTime) * 1000,
-    );
 
     // Schedule the first recording
     timer((startTime - this.ctx.currentTime - head - recordingSchedulingTime) * 1000).subscribe(
       () => {
+        result$.next({ type: RecordingEventType.STARTED });
         scheduled$.next({
           startTime,
           idx: 0,
@@ -138,7 +142,44 @@ export class LoopRecorder {
       },
     );
 
-    return blobs$;
+    return result$;
+  }
+}
+
+export class RecordingManager {
+  private readonly recorder1: LoopRecorder;
+  private readonly recorder2: LoopRecorder;
+  private readonly audio: SharedAudioContextContents;
+  constructor(audio: SharedAudioContextContents, micStream: MediaStream) {
+    this.recorder1 = new LoopRecorder(audio.ctx, micStream);
+    this.recorder2 = new LoopRecorder(audio.ctx, micStream);
+    this.audio = audio;
+  }
+
+  recordLoop(
+    time: TimeSettings,
+    numBlobs: number,
+    micDelay: number = defaultMicDelay,
+    head: number = recordingHead,
+    tail: number = defaultTail,
+  ): Observable<RecordingEvent> {
+    if (this.recorder1.getIsLocked() && this.recorder2.getIsLocked()) {
+      return throwError(
+        () =>
+          new Error('both LoopRecorders are locked, so another recording cannot be created yet'),
+      );
+    }
+
+    const startTime =
+      getSecondsUntilStart(
+        time,
+        this.audio,
+        Math.max(head + recordingSchedulingTime + micDelay, 0),
+      ) + this.audio.ctx.currentTime;
+    const length = getLoopLength(time);
+    const rec: LoopRecorder = !this.recorder1.getIsLocked() ? this.recorder1 : this.recorder2;
+
+    return rec.record(startTime + micDelay, length, numBlobs, head, tail);
   }
 }
 
@@ -165,7 +206,7 @@ const recordLoop = (
   micDelay: number = defaultMicDelay,
   head: number = recordingHead,
   tail: number = defaultTail,
-): Observable<OffsetedBlob> => {
+): Observable<RecordingEvent> => {
   if (!audio.recorder1 || !audio.recorder2) {
     return throwError(() => new Error('recorders were not initialized prior to recording'));
   }

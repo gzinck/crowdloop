@@ -9,10 +9,10 @@ import { SharedAudioContextProvider } from './audio/SharedAudioContext';
 
 function App(): React.ReactElement {
   return (
-    <ClockContextProvider>
-      <SharedAudioContextProvider>
-        <LoopContextProvider>
-          <Router>
+    <Router>
+      <ClockContextProvider>
+        <SharedAudioContextProvider>
+          <LoopContextProvider>
             <Switch>
               <Route path={LOOP_BOARD_ROUTE}>
                 <LoopBoard />
@@ -21,10 +21,10 @@ function App(): React.ReactElement {
                 <GrantMicPage />
               </Route>
             </Switch>
-          </Router>
-        </LoopContextProvider>
-      </SharedAudioContextProvider>
-    </ClockContextProvider>
+          </LoopContextProvider>
+        </SharedAudioContextProvider>
+      </ClockContextProvider>
+    </Router>
   );
 }
 

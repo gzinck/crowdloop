@@ -7,8 +7,7 @@ import TimeBar from './timeBar/TimeBar';
 
 const Screen = styled.div`
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 `;
 
 const LoopBoard = (): React.ReactElement => {
