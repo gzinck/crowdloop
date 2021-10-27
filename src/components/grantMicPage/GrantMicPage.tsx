@@ -24,8 +24,8 @@ const GrantMicPage = (): React.ReactElement => {
   const audio = React.useContext(SharedAudioContext);
 
   React.useEffect(() => {
-    if (audio.micStream) history.push(LOOP_BOARD_ROUTE);
-  }, [history, audio.micStream]);
+    if (audio.recorder) history.push(LOOP_BOARD_ROUTE);
+  }, [history, audio.recorder]);
 
   return (
     <Background>

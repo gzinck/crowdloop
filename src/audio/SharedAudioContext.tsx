@@ -1,16 +1,14 @@
 import React from 'react';
 import { useHistory } from 'react-router';
 import { GRANT_MIC_ROUTE } from '../routes';
-import { LoopRecorder } from './loopRecorder';
+import { RecordingManager } from './loopRecorder';
 import { getMicPermissions, hasMicPermissions } from './micStream';
 
 export interface SharedAudioContextContents {
   ctx: AudioContext;
   startTime: number; // time when the session started, in seconds
   micDelay: number;
-  micStream?: MediaStream;
-  recorder1?: LoopRecorder;
-  recorder2?: LoopRecorder;
+  recorder?: RecordingManager;
   getMicStream: () => void;
   setMicDelay: (s: number) => void;
 }
@@ -48,9 +46,7 @@ export const SharedAudioContextProvider = ({
         contents.ctx.resume();
         return {
           ...contents,
-          micStream,
-          recorder1: new LoopRecorder(contents.ctx, micStream),
-          recorder2: new LoopRecorder(contents.ctx, micStream),
+          recorder: new RecordingManager(contents, micStream),
         };
       });
     });

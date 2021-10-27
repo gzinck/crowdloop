@@ -7,6 +7,7 @@ import { recordingHead } from '../loopRecorder';
 
 const previewSize = 200;
 const schedulingTime = 0.05; // time in s before loop start at which point we should start scheduling things
+const stopTime = 0.05; // time to stop the audio if needed ASAP
 
 interface AudioStartEvent {
   idx: number;
@@ -50,6 +51,7 @@ class LoopBuffer {
   private readonly audio: SharedAudioContextContents;
   private gainNode1: GainNode;
   private gainNode2: GainNode;
+  private mainGainNode: GainNode;
   private stopped = false;
 
   /**
@@ -67,13 +69,19 @@ class LoopBuffer {
     this.heads = new Array(nBuffers).fill(0);
 
     // Gain nodes handle the fade in and out
+    // Main gain is for the emergency stops
+    this.mainGainNode = audio.ctx.createGain();
+    this.mainGainNode.gain.value = 0;
+    this.mainGainNode.connect(audio.ctx.destination);
+
+    // Other gain is for fading in/out pieces of the audio file
     this.gainNode1 = audio.ctx.createGain();
     this.gainNode1.gain.value = 0;
-    this.gainNode1.connect(audio.ctx.destination);
+    this.gainNode1.connect(this.mainGainNode);
 
     this.gainNode2 = audio.ctx.createGain();
     this.gainNode2.gain.value = 0;
-    this.gainNode2.connect(audio.ctx.destination);
+    this.gainNode2.connect(this.mainGainNode);
   }
 
   public addBlob({ blob, idx, length, head }: OffsetedBlob): Promise<void> {
@@ -111,6 +119,8 @@ class LoopBuffer {
    */
   public stop(): void {
     this.stopped = true;
+    this.mainGainNode.gain.setValueAtTime(1, this.audio.ctx.currentTime);
+    this.mainGainNode.gain.linearRampToValueAtTime(0, this.audio.ctx.currentTime + stopTime);
   }
 
   public start(): void {
@@ -161,6 +171,9 @@ class LoopBuffer {
 
       curGainNode.gain.setValueAtTime(0, fadeInTime);
       curGainNode.gain.linearRampToValueAtTime(1, startTime);
+
+      // Also make sure the main gain is up
+      this.mainGainNode.gain.setValueAtTime(1, fadeInTime);
 
       // If the buffer is empty, simply wait until the next buffer begins
       // (already scheduled)

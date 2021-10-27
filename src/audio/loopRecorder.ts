@@ -42,7 +42,7 @@ export interface OffsetedBlob {
   idx: number;
 }
 
-export class LoopRecorder {
+class LoopRecorder {
   private readonly ctx: AudioContext;
   private readonly recorder1: MediaRecorder;
   private readonly recorder2: MediaRecorder;
@@ -156,6 +156,21 @@ export class RecordingManager {
     this.audio = audio;
   }
 
+  /**
+   * Records a sequence of audio files in the form of Blobs.
+   * @param time settings for the loop's time
+   * @param numBlobs the number of separate audio files to send back in Blob format
+   * @param micDelay the number of seconds late the mic audio arrives for recording
+   * @param offset$ a channel to send back the number of seconds the recording started before it
+   * was supposed to (MediaRecorder cannot be synced with the audio context for its start time as
+   * of 2021). If the number is positive (it should be), this should be the offset in playback for
+   * the first recording.
+   * For those wondering what this crazy design pattern is, it mirrors standards for GoLang.
+   * @param head the number of seconds before the MP3 to record (ideally)
+   * @param tail the number of seconds after the MP3 to record (ideally)
+   * @returns Observable of webm blobs with the recorded audio. There are 2--4 separate mp4/webm files
+   * produced before completion
+   */
   recordLoop(
     time: TimeSettings,
     numBlobs: number,
@@ -183,47 +198,47 @@ export class RecordingManager {
   }
 }
 
-/**
- * Records a sequence of audio files in the form of Blobs.
- * @param time settings for the loop's time
- * @param audio audio context with the audio recorders. Note that the recorder1 and recorder2
- * must be instantiated before calling this function
- * @param head the number of seconds before and after the MP3 to record
- * @param numBlobs the number of separate audio files to send back in Blob format
- * @param micDelay the number of seconds late the mic audio arrives for recording
- * @param offset$ a channel to send back the number of seconds the recording started before it
- * was supposed to (MediaRecorder cannot be synced with the audio context for its start time as
- * of 2021). If the number is positive (it should be), this should be the offset in playback for
- * the first recording.
- * For those wondering what this crazy design pattern is, it mirrors standards for GoLang.
- * @returns Observable of webm blobs with the recorded audio. There are 2--4 separate webm files
- * produced before completion
- */
-const recordLoop = (
-  time: TimeSettings,
-  audio: SharedAudioContextContents,
-  numBlobs: number,
-  micDelay: number = defaultMicDelay,
-  head: number = recordingHead,
-  tail: number = defaultTail,
-): Observable<RecordingEvent> => {
-  if (!audio.recorder1 || !audio.recorder2) {
-    return throwError(() => new Error('recorders were not initialized prior to recording'));
-  }
+// /**
+//  * Records a sequence of audio files in the form of Blobs.
+//  * @param time settings for the loop's time
+//  * @param audio audio context with the audio recorders. Note that the recorder1 and recorder2
+//  * must be instantiated before calling this function
+//  * @param head the number of seconds before and after the MP3 to record
+//  * @param numBlobs the number of separate audio files to send back in Blob format
+//  * @param micDelay the number of seconds late the mic audio arrives for recording
+//  * @param offset$ a channel to send back the number of seconds the recording started before it
+//  * was supposed to (MediaRecorder cannot be synced with the audio context for its start time as
+//  * of 2021). If the number is positive (it should be), this should be the offset in playback for
+//  * the first recording.
+//  * For those wondering what this crazy design pattern is, it mirrors standards for GoLang.
+//  * @returns Observable of webm blobs with the recorded audio. There are 2--4 separate webm files
+//  * produced before completion
+//  */
+// const recordLoop = (
+//   time: TimeSettings,
+//   audio: SharedAudioContextContents,
+//   numBlobs: number,
+//   micDelay: number = defaultMicDelay,
+//   head: number = recordingHead,
+//   tail: number = defaultTail,
+// ): Observable<RecordingEvent> => {
+//   if (!audio.recorder1 || !audio.recorder2) {
+//     return throwError(() => new Error('recorders were not initialized prior to recording'));
+//   }
 
-  if (audio.recorder1.getIsLocked() && audio.recorder2.getIsLocked()) {
-    return throwError(
-      () => new Error('both LoopRecorders are locked, so another recording cannot be created yet'),
-    );
-  }
+//   if (audio.recorder1.getIsLocked() && audio.recorder2.getIsLocked()) {
+//     return throwError(
+//       () => new Error('both LoopRecorders are locked, so another recording cannot be created yet'),
+//     );
+//   }
 
-  const startTime =
-    getSecondsUntilStart(time, audio, Math.max(head + recordingSchedulingTime + micDelay, 0)) +
-    audio.ctx.currentTime;
-  const length = getLoopLength(time);
-  const rec: LoopRecorder = !audio.recorder1.getIsLocked() ? audio.recorder1 : audio.recorder2;
+//   const startTime =
+//     getSecondsUntilStart(time, audio, Math.max(head + recordingSchedulingTime + micDelay, 0)) +
+//     audio.ctx.currentTime;
+//   const length = getLoopLength(time);
+//   const rec: LoopRecorder = !audio.recorder1.getIsLocked() ? audio.recorder1 : audio.recorder2;
 
-  return rec.record(startTime + micDelay, length, numBlobs, head, tail);
-};
+//   return rec.record(startTime + micDelay, length, numBlobs, head, tail);
+// };
 
-export default recordLoop;
+// export default recordLoop;

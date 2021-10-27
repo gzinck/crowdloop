@@ -48,8 +48,23 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
     }
   }
 
+  const onClick = () => {
+    if (!loop) {
+      loopCtx.recordLoop(loopIdx);
+      return;
+    }
+
+    switch (loop.status) {
+      case LoopStatus.PLAYING:
+        loop.stop();
+        break;
+      case LoopStatus.STOPPED:
+        loop.start();
+    }
+  };
+
   return (
-    <Disk onClick={() => loopCtx.recordLoop(loopIdx)}>
+    <Disk onClick={onClick}>
       <ShadowedSVG viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}
