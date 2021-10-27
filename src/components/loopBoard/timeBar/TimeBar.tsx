@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import theme from '../../../theme';
 import BarNumIndicator from './BarNumIndicator';
+import TimeBarButtons from './TimeBarButtons';
 
 const Bar = styled.div`
   width: 100%;
@@ -18,6 +19,7 @@ const TimeBar = (): React.ReactElement => {
   return (
     <Bar>
       <BarNumIndicator />
+      <TimeBarButtons />
     </Bar>
   );
 };

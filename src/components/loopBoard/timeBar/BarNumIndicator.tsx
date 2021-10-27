@@ -23,7 +23,14 @@ const BarNumIndicator = (): React.ReactElement => {
         fill={theme.palette.primary.default}
       />
       <circle cx="50" cy="50" r="40" fill={theme.palette.primary.dark} />
-      <text fontSize="4rem" x="50%" y="55%" dominantBaseline="middle" textAnchor="middle">
+      <text
+        fontSize="4rem"
+        x="50%"
+        y="55%"
+        dominantBaseline="middle"
+        textAnchor="middle"
+        fill={theme.palette.primary.contrastText}
+      >
         {time.nBars}
       </text>
     </svg>

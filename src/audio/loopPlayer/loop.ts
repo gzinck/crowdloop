@@ -28,6 +28,7 @@ class Loop {
     recordLoop(time, audio, numBlobs).subscribe({
       next: (blob) => {
         this.buffer.addBlob(blob).then(() => {
+          console.log('Added blob', blob);
           if (blob.idx === 0) this.buffer.start();
         });
       },

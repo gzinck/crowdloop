@@ -6,6 +6,7 @@ import { SharedAudioContextContents } from './SharedAudioContext';
 export const recordingSchedulingTime = 0.05; // time before recording (s) at which time we should start scheduling because timing is imprecise
 export const recordingHead = 0.1;
 export const defaultTail = 0.1;
+export const defaultMicDelay = 0.35; // delay for MacBook Air internal mic
 
 interface ScheduledRecording {
   startTime: number; // in s
@@ -65,9 +66,25 @@ export class LoopRecorder {
     const scheduled$ = new Subject<ScheduledRecording>();
     scheduled$.subscribe((scheduled) => {
       const curTime = this.ctx.currentTime;
-      const actualHead = scheduled.startTime - curTime;
+      const curHead = scheduled.startTime - curTime;
+      let actualHead = 0;
+      const curTimestamp = performance.now();
+      let startTime = 0;
+      // When actually start, record the time using the timestamp of the start event
+      scheduled.curRecorder.onstart = (event) => {
+        startTime = event.timeStamp;
+        // This is the amount of the recording to skip at the start
+        actualHead = curHead - (event.timeStamp - curTimestamp) / 1000;
+      };
+
+      scheduled.curRecorder.onstop = (event) => {
+        console.log('Length of recording: ', event.timeStamp - startTime);
+        console.log('Event timestamp:', event.timeStamp, ', Curr timestamp:', performance.now());
+        console.log('Head:', actualHead, ', length:', length, ', tail:', tail);
+      };
 
       scheduled.curRecorder.ondataavailable = (event) => {
+        console.log('WOOOO', event);
         blobs$.next({
           blob: event.data,
           head: actualHead,
@@ -85,8 +102,8 @@ export class LoopRecorder {
 
       scheduled.curRecorder.start();
 
-      // After actualHead + length, end this recording
-      timer((actualHead + length + tail) * 1000).subscribe(() => {
+      // After curHead + length, end this recording
+      timer((curHead + length + tail) * 1000).subscribe(() => {
         scheduled.curRecorder.stop();
       });
 
@@ -104,6 +121,10 @@ export class LoopRecorder {
         });
       }
     });
+    console.log(
+      'First recording',
+      (startTime - this.ctx.currentTime - head - recordingSchedulingTime) * 1000,
+    );
 
     // Schedule the first recording
     timer((startTime - this.ctx.currentTime - head - recordingSchedulingTime) * 1000).subscribe(
@@ -128,6 +149,7 @@ export class LoopRecorder {
  * must be instantiated before calling this function
  * @param head the number of seconds before and after the MP3 to record
  * @param numBlobs the number of separate audio files to send back in Blob format
+ * @param micDelay the number of seconds late the mic audio arrives for recording
  * @param offset$ a channel to send back the number of seconds the recording started before it
  * was supposed to (MediaRecorder cannot be synced with the audio context for its start time as
  * of 2021). If the number is positive (it should be), this should be the offset in playback for
@@ -140,6 +162,7 @@ const recordLoop = (
   time: TimeSettings,
   audio: SharedAudioContextContents,
   numBlobs: number,
+  micDelay: number = defaultMicDelay,
   head: number = recordingHead,
   tail: number = defaultTail,
 ): Observable<OffsetedBlob> => {
@@ -154,11 +177,12 @@ const recordLoop = (
   }
 
   const startTime =
-    getSecondsUntilStart(time, audio, head + recordingSchedulingTime) + audio.ctx.currentTime;
+    getSecondsUntilStart(time, audio, Math.max(head + recordingSchedulingTime + micDelay, 0)) +
+    audio.ctx.currentTime;
   const length = getLoopLength(time);
   const rec: LoopRecorder = !audio.recorder1.getIsLocked() ? audio.recorder1 : audio.recorder2;
 
-  return rec.record(startTime, length, numBlobs, head, tail);
+  return rec.record(startTime + micDelay, length, numBlobs, head, tail);
 };
 
 export default recordLoop;

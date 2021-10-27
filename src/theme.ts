@@ -3,7 +3,7 @@ const theme = {
     primary: {
       default: '#c76f18',
       dark: '#994d00',
-      contrastText: '#000',
+      contrastText: '#FFF',
     },
     background: {
       default: '#111',
