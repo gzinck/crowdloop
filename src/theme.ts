@@ -24,6 +24,9 @@ const theme = {
     },
   },
   padding: (multiplier = 1): string => `${multiplier * 0.5}rem`,
+  shadow: `
+    -webkit-filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
+    filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));`,
 };
 
 export default theme;

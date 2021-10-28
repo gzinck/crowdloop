@@ -6,20 +6,21 @@ const Slider = styled.input.attrs({
 })`
   -webkit-appearance: none;
   appearance: none;
+  border-radius: 1rem;
   width: 100%;
   height: 2rem;
   background: ${theme.palette.background.light};
   outline: none;
-  -webkit-filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
-  filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
+  ${theme.shadow}
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 2rem;
+    width: 5rem;
     height: 2rem;
     background: ${theme.palette.primary.default};
     cursor: pointer;
+    border-radius: 1rem;
   }
 
   &::-moz-range-thumb {
@@ -27,6 +28,7 @@ const Slider = styled.input.attrs({
     height: 2rem;
     background: ${theme.palette.primary.default};
     cursor: pointer;
+    border-radius: 50%;
   }
 `;
 

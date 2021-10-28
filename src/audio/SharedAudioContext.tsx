@@ -1,9 +1,12 @@
 import React from 'react';
 import { useHistory } from 'react-router';
-import { timer } from 'rxjs';
+import { auditTime, Subject, timer } from 'rxjs';
+import Cookies from 'js-cookie';
 import { GRANT_MIC_ROUTE } from '../routes';
 import { RecordingManager } from './loopRecorder';
 import { getMicPermissions, hasMicPermissions } from './micStream';
+
+const MIC_DELAY_COOKIE = 'mic-delay';
 
 export interface SharedAudioContextContents {
   ctx: AudioContext;
@@ -32,14 +35,23 @@ export const SharedAudioContextProvider = ({
   const history = useHistory();
   const [contents, setContents] = React.useState<SharedAudioContextContents>(defaultContents);
 
-  const setMicDelay = React.useCallback(
-    (s: number) =>
-      setContents((contents) => ({
-        ...contents,
-        micDelay: s,
-      })),
-    [],
-  );
+  // Subject for setting cookie for mic delay with throttling
+  // to avoid too many cookie sets
+  const cookie$ = React.useRef(new Subject<number>());
+  React.useEffect(() => {
+    const sub = cookie$.current.pipe(auditTime(500)).subscribe((s) => {
+      Cookies.set(MIC_DELAY_COOKIE, `${s}`);
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  const setMicDelay = React.useCallback((s: number) => {
+    setContents((contents) => ({
+      ...contents,
+      micDelay: s,
+    }));
+    cookie$.current.next(s);
+  }, []);
 
   const getMicStream = React.useCallback(() => {
     return getMicPermissions().then((micStream) => {
@@ -57,6 +69,11 @@ export const SharedAudioContextProvider = ({
       });
     });
   }, []);
+
+  // Set the mic delay based on the stored cookie, if any
+  React.useEffect(() => {
+    setMicDelay(+(Cookies.get(MIC_DELAY_COOKIE) || '0'));
+  }, [setMicDelay]);
 
   // At the start
   React.useEffect(() => {
