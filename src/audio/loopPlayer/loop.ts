@@ -1,7 +1,6 @@
-import { timer } from 'rxjs';
 import { TimeSettings } from '../../components/ClockContext';
-import { getLoopLength, getSecondsUntilStart } from '../../utils/beats';
-import { RecordingEventType, recordingHead, recordingSchedulingTime } from '../loopRecorder';
+import { getLoopLength } from '../../utils/beats';
+import { RecordingEventType } from '../loopRecorder';
 import { SharedAudioContextContents } from '../SharedAudioContext';
 import LoopBuffer from './loopBuffer';
 
