@@ -8,6 +8,16 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 To get husky set up with pre-commit hooks for linting, run `npm run prepare`.
 
+To get everything installed and running, run:
+
+```
+npm i
+npm start
+```
+
+Then, go to your browser and accept the unsecure site. HTTPS is used because
+on mobile Safari, the mic is disabled for unsecure websites.
+
 ## Available Scripts
 
 In the project directory, you can run:

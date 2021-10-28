@@ -1,5 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router';
+import { timer } from 'rxjs';
 import { GRANT_MIC_ROUTE } from '../routes';
 import { RecordingManager } from './loopRecorder';
 import { getMicPermissions, hasMicPermissions } from './micStream';
@@ -43,7 +44,12 @@ export const SharedAudioContextProvider = ({
   const getMicStream = React.useCallback(() => {
     return getMicPermissions().then((micStream) => {
       setContents((contents) => {
-        contents.ctx.resume();
+        contents.ctx.resume().then(() => {
+          // Wait 100ms. If time is not moving, try to resume again
+          timer(100).subscribe(() => {
+            if (contents.ctx.currentTime === 0) contents.ctx.resume();
+          });
+        });
         return {
           ...contents,
           recorder: new RecordingManager(contents, micStream),
