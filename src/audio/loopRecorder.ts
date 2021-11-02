@@ -1,7 +1,7 @@
 import { Observable, Subject, throwError, timer } from 'rxjs';
-import { TimeSettings } from '../components/ClockContext';
+import { TimeSettings } from '../contexts/ClockContext';
 import { getLoopLength, getSecondsUntilStart } from '../utils/beats';
-import { SharedAudioContextContents } from './SharedAudioContext';
+import { SharedAudioContextContents } from '../contexts/SharedAudioContext';
 
 export const recordingSchedulingTime = 0.05; // time before recording (s) at which time we should start scheduling because timing is imprecise
 export const recordingHead = 0.1;

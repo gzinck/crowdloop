@@ -1,7 +1,7 @@
 import React from 'react';
 import Labelled from '../../../generic/Labelled';
 import NumericTextField from '../../../generic/NumericTextField';
-import ClockContext from '../../../ClockContext';
+import ClockContext from '../../../../contexts/ClockContext';
 
 const BpbarChooser = (): React.ReactElement => {
   const { bpbar, updateClock } = React.useContext(ClockContext);

@@ -1,10 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
-import SharedAudioContext from '../../../audio/SharedAudioContext';
+import SharedAudioContext from '../../../contexts/SharedAudioContext';
 import useRefresh from '../../../hooks/useRefresh';
 import theme from '../../../theme';
 import { getLoopLength, getSecondsUntilStart } from '../../../utils/beats';
-import ClockContext from '../../ClockContext';
+import ClockContext from '../../../contexts/ClockContext';
 import Sector from '../loopDisk/Sector';
 
 const size = '4rem';

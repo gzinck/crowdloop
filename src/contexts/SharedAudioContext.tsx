@@ -3,8 +3,8 @@ import { useHistory } from 'react-router';
 import { auditTime, Subject, interval } from 'rxjs';
 import Cookies from 'js-cookie';
 import { GRANT_MIC_ROUTE } from '../routes';
-import { RecordingManager } from './loopRecorder';
-import { getMicPermissions, hasMicPermissions } from './micStream';
+import { RecordingManager } from '../audio/loopRecorder';
+import { getMicPermissions, hasMicPermissions } from '../audio/micStream';
 
 const MIC_DELAY_COOKIE = 'mic-delay';
 

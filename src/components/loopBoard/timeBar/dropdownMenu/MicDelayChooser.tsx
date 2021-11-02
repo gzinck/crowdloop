@@ -1,5 +1,5 @@
 import React from 'react';
-import SharedAudioContext from '../../../../audio/SharedAudioContext';
+import SharedAudioContext from '../../../../contexts/SharedAudioContext';
 import Labelled from '../../../generic/Labelled';
 import Slider from '../../../generic/Slider';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import LoopContext from '../LoopContext';
+import LoopContext from '../../contexts/LoopContext';
 import FlashingBackground from './FlashingBackground';
 import LoopDisk from './loopDisk/LoopDisk';
 import TimeBar from './timeBar/TimeBar';

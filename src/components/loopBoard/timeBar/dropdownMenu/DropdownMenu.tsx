@@ -4,6 +4,7 @@ import theme from '../../../../theme';
 import BpbarChooser from './BpbarChooser';
 import BPMChooser from './BPMChooser';
 import MicDelayChooser from './MicDelayChooser';
+import SessionStatus from './SessionStatus';
 
 interface Props {
   isOpen: boolean;
@@ -28,6 +29,7 @@ const DropdownMenu = ({ isOpen }: Props): React.ReactElement => {
       <MicDelayChooser />
       <BPMChooser />
       <BpbarChooser />
+      <SessionStatus />
     </Menu>
   );
 };

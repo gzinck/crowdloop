@@ -1,5 +1,5 @@
-import { SharedAudioContextContents } from '../audio/SharedAudioContext';
-import { TimeSettings } from '../components/ClockContext';
+import { SharedAudioContextContents } from '../contexts/SharedAudioContext';
+import { TimeSettings } from '../contexts/ClockContext';
 
 /**
  * Gets the the number of seconds before the loop should start.

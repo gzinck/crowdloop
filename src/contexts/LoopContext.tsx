@@ -1,16 +1,17 @@
 import React from 'react';
-import Loop from '../audio/loopPlayer/loop';
-import SharedAudioContext from '../audio/SharedAudioContext';
+import SharedAudioContext from './SharedAudioContext';
 import ClockContext from './ClockContext';
+import NetworkedLoop from '../audio/loopPlayer/networkedLoop';
+import APIContext from './APIContext';
 
 interface LoopContextContents {
-  loops: (Loop | null)[];
+  loops: (NetworkedLoop | null)[];
   recordLoop: (idx: number) => void;
 }
 
 const defaultContents: LoopContextContents = {
   // @TODO: should we support > 6 loops?
-  loops: new Array<Loop | null>(6).fill(null),
+  loops: new Array<NetworkedLoop | null>(6).fill(null),
   recordLoop: () => null,
 };
 
@@ -21,20 +22,27 @@ export const LoopContextProvider = ({
 }: {
   children: React.ReactElement;
 }): React.ReactElement => {
-  // @TODO: add setLoops here to allow changes later on
   const audio = React.useContext(SharedAudioContext);
   const time = React.useContext(ClockContext);
-  const [loops, setLoops] = React.useState<(Loop | null)[]>(defaultContents.loops);
+  const { client } = React.useContext(APIContext);
+  const [loops, setLoops] = React.useState<(NetworkedLoop | null)[]>(defaultContents.loops);
+
+  React.useEffect(() => {
+    setLoops((loops) => {
+      loops.forEach((loop) => loop?.stop());
+      return defaultContents.loops;
+    });
+  }, [client]);
 
   const recordLoop = React.useCallback(
     (idx: number) => {
       setLoops((loops) => {
         const newLoops = [...loops];
-        newLoops[idx] = new Loop(audio, time);
+        newLoops[idx] = new NetworkedLoop(audio, time, client);
         return newLoops;
       });
     },
-    [audio, time],
+    [audio, time, client],
   );
 
   return (

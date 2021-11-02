@@ -9,7 +9,15 @@ const Button = styled.button`
   margin: 0.3rem;
   border: none;
   font-size: 1rem;
+  transition: background-color 0.1s;
   cursor: pointer;
+  &:hover {
+    background-color: ${theme.palette.primary.light};
+  }
+  &:disabled {
+    cursor: not-allowed;
+    background-color: ${theme.palette.primary.dark};
+  }
 `;
 
 export default Button;

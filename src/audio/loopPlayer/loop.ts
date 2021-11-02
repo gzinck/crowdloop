@@ -1,7 +1,7 @@
-import { TimeSettings } from '../../components/ClockContext';
+import { TimeSettings } from '../../contexts/ClockContext';
 import { getLoopLength } from '../../utils/beats';
-import { RecordingEventType } from '../loopRecorder';
-import { SharedAudioContextContents } from '../SharedAudioContext';
+import { OffsetedBlob, RecordingEventType } from '../loopRecorder';
+import { SharedAudioContextContents } from '../../contexts/SharedAudioContext';
 import LoopBuffer from './loopBuffer';
 
 export enum LoopStatus {
@@ -11,19 +11,24 @@ export enum LoopStatus {
   PENDING = 'PENDING',
 }
 
+interface Callbacks {
+  onCreateLoop?: (startAt: number, numBlobs: number) => void;
+  onAddBlob?: (blob: OffsetedBlob) => void;
+}
+
 class Loop {
   public readonly buffer: LoopBuffer;
   public readonly time: TimeSettings;
   public status: LoopStatus = LoopStatus.PENDING;
 
-  constructor(audio: SharedAudioContextContents, time: TimeSettings) {
-    if (!audio.recorder)
+  constructor(audio: SharedAudioContextContents, time: TimeSettings, cb?: Callbacks) {
+    if (!audio.recorder) {
       throw new Error(
         'must set up a mic stream and create a RecordingManager before creating a loop',
       );
+    }
 
     this.time = time;
-
     const numBlobs = getLoopLength(time) > 4 ? 4 : 2;
     this.buffer = new LoopBuffer(audio, time, numBlobs);
 
@@ -32,7 +37,11 @@ class Loop {
       next: (event) => {
         if (event.type === RecordingEventType.SUCCESS) {
           this.buffer.addBlob(event.recording).then(() => {
-            if (event.recording.idx === 0) this.buffer.start();
+            if (event.recording.idx === 0) {
+              const startAt = this.buffer.start();
+              if (cb && cb.onCreateLoop) cb.onCreateLoop(startAt, numBlobs);
+            }
+            if (cb && cb.onAddBlob) cb.onAddBlob(event.recording);
           });
         } else {
           this.status = LoopStatus.RECORDING;
@@ -47,9 +56,9 @@ class Loop {
     this.status = LoopStatus.STOPPED;
   }
 
-  start(): void {
-    this.buffer.start();
+  start(): number {
     this.status = LoopStatus.PLAYING;
+    return this.buffer.start();
   }
 }
 

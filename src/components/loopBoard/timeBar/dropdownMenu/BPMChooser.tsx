@@ -1,7 +1,7 @@
 import React from 'react';
 import Labelled from '../../../generic/Labelled';
 import NumericTextField from '../../../generic/NumericTextField';
-import ClockContext from '../../../ClockContext';
+import ClockContext from '../../../../contexts/ClockContext';
 
 const BPMChooser = (): React.ReactElement => {
   const { bpm, updateClock } = React.useContext(ClockContext);

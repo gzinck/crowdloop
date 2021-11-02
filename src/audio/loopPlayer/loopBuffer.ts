@@ -1,8 +1,8 @@
 import { Subject, timer } from 'rxjs';
-import { TimeSettings } from '../../components/ClockContext';
+import { TimeSettings } from '../../contexts/ClockContext';
 import { getLoopLength, getSecondsUntilStart } from '../../utils/beats';
 import { OffsetedBlob } from '../loopRecorder';
-import { SharedAudioContextContents } from '../SharedAudioContext';
+import { SharedAudioContextContents } from '../../contexts/SharedAudioContext';
 import { recordingHead } from '../loopRecorder';
 
 const previewSize = 200;
@@ -25,7 +25,7 @@ interface OffsetedBuffer {
   length: number;
 }
 
-interface LoopProgress {
+export interface LoopProgress {
   normalized: number; // in [0, 1)
   time: number; // curr time in the loop
   beats: number; // current beat in the loop (float)
@@ -123,7 +123,11 @@ class LoopBuffer {
     this.mainGainNode.gain.linearRampToValueAtTime(0, this.audio.ctx.currentTime + stopTime);
   }
 
-  public start(): void {
+  /**
+   *
+   * @returns start time of the loop
+   */
+  public start(): number {
     this.stopped = false;
     const events$ = new Subject<AudioStartEvent>();
     const loopLength = getLoopLength(this.time);
@@ -205,6 +209,8 @@ class LoopBuffer {
         prvGainNode: this.gainNode2,
       });
     });
+
+    return firstStartTime;
   }
 
   public getProgress(): LoopProgress {

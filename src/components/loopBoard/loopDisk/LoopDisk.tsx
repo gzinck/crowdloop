@@ -4,7 +4,7 @@ import theme from '../../../theme';
 import Sector from './Sector';
 import useRefresh from '../../../hooks/useRefresh';
 import LoopVis from './LoopVis';
-import LoopContext from '../../LoopContext';
+import LoopContext from '../../../contexts/LoopContext';
 import { LoopStatus } from '../../../audio/loopPlayer/loop';
 
 interface Props {
@@ -32,11 +32,11 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
 
   useRefresh(20); // Keep it up to date
 
-  const currAngle = loop && loop.buffer.getProgress().normalized * 2 * Math.PI;
+  const currAngle = loop && loop.getProgress().normalized * 2 * Math.PI;
 
   let backgroundColour = theme.palette.background.light;
   if (loop) {
-    switch (loop.status) {
+    switch (loop.getStatus()) {
       case LoopStatus.PLAYING:
         backgroundColour = theme.palette.primary.default;
         break;
@@ -54,7 +54,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
       return;
     }
 
-    switch (loop.status) {
+    switch (loop.getStatus()) {
       case LoopStatus.PLAYING:
         loop.stop();
         break;
@@ -69,7 +69,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}
         {loop && (
-          <LoopVis radius={50} shape={loop.buffer.preview} fill={theme.palette.primary.dark} />
+          <LoopVis radius={50} shape={loop.getPreview()} fill={theme.palette.primary.dark} />
         )}
         {/* Show the current position in the loop with a circling cursor */}
         {currAngle !== null && (

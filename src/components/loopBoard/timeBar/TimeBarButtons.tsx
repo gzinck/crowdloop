@@ -1,6 +1,6 @@
 import React from 'react';
 import theme from '../../../theme';
-import ClockContext from '../../ClockContext';
+import ClockContext from '../../../contexts/ClockContext';
 import Add from '../../icons/Add';
 import Subtract from '../../icons/Subtract';
 import IconButton from '../../generic/IconButton';
