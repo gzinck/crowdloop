@@ -31,7 +31,7 @@ class NetworkedLoop {
           api.audio.set({
             loopID: this.id,
             packet: blob.idx,
-            file: new Uint8Array(buff),
+            file: buff,
             meta: {
               head: blob.head,
               length: blob.length,

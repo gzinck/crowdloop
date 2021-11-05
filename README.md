@@ -1,6 +1,10 @@
-# Getting Started with Create React App
+# CrowdLoop
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A Web Audio-based loop pedal for a performer. When configured with a
+[CrowdLoop Server](https://github.com/gzinck/crowdloop-server), it provides
+the ability to record loops locally and play them remotely on audience phones
+which are on the [CrowdLoop Client](https://github.com/gzinck/crowdloop-client)
+web app.
 
 ## Getting started
 

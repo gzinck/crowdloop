@@ -13,7 +13,7 @@ interface CreateAudioReq {
 interface SetAudioReq {
   loopID: string;
   packet: number;
-  file: Uint8Array;
+  file: ArrayBuffer;
   meta: {
     head: number;
     length: number;
