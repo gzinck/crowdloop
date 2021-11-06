@@ -7,16 +7,21 @@ import LoopVis from './LoopVis';
 import LoopContext from '../../../contexts/LoopContext';
 import { LoopStatus } from '../../../audio/loopPlayer/loop';
 
-interface Props {
+interface Styles {
+  size?: string;
+}
+
+interface Props extends Styles {
   loopIdx: number;
+  isStatic?: boolean;
 }
 
 const Disk = styled.div`
-  width: 90%;
-  max-width: 250px;
+  width: ${({ size }: Styles) => size || '250px'};
   padding: ${theme.padding(1)};
   display: flex;
   justify-content: center;
+  box-sizing: border-box;
 `;
 
 const ShadowedSVG = styled.svg`
@@ -26,7 +31,7 @@ const ShadowedSVG = styled.svg`
   height: 100%;
 `;
 
-const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
+const LoopDisk = ({ loopIdx, size, isStatic }: Props): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
   const loop = loopCtx.loops[loopIdx];
 
@@ -50,7 +55,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
 
   const onClick = () => {
     if (!loop) {
-      loopCtx.recordLoop(loopIdx);
+      loopCtx.recordLoop();
       return;
     }
 
@@ -64,7 +69,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
   };
 
   return (
-    <Disk onClick={onClick}>
+    <Disk onClick={isStatic ? undefined : onClick} size={size}>
       <ShadowedSVG viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}

@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import useOnClickOutside from '../../../hooks/useOnClickOutside';
 import theme from '../../../theme';
 import IconButton from '../../generic/IconButton';
 import Menu from '../../icons/Menu';
@@ -33,9 +34,12 @@ const TopLeft = styled.div`
 
 const TimeBar = (): React.ReactElement => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const cb = React.useCallback(() => setIsOpen(false), []);
+  useOnClickOutside(ref, cb);
   return (
     <>
-      <DropdownMenu isOpen={isOpen} />
+      <DropdownMenu isOpen={isOpen} ref={ref} />
       <Bar>
         <TopLeft>
           <IconButton onClick={() => setIsOpen((o) => !o)}>

@@ -8,7 +8,7 @@ const serverURL = 'ws://localhost:2000';
 class ClientAPI {
   public readonly audio: AudioAPI;
   public readonly sessionID: string;
-  private readonly session: SessionAPI;
+  public readonly session: SessionAPI;
   private readonly clock: ClockAPI;
 
   constructor(ctx: AudioContext, sessionID: string) {

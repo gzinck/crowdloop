@@ -1,18 +1,20 @@
 import React from 'react';
 import SharedAudioContext from './SharedAudioContext';
 import ClockContext from './ClockContext';
-import NetworkedLoop from '../audio/loopPlayer/networkedLoop';
+import NetworkedLoop, { CircleDimensions } from '../audio/loopPlayer/networkedLoop';
 import APIContext from './APIContext';
 
 interface LoopContextContents {
   loops: (NetworkedLoop | null)[];
-  recordLoop: (idx: number) => void;
+  recordLoop: (dim?: CircleDimensions) => void;
+  deleteLoop: (id: number) => void;
 }
 
 const defaultContents: LoopContextContents = {
   // @TODO: should we support > 6 loops?
-  loops: new Array<NetworkedLoop | null>(6).fill(null),
+  loops: [],
   recordLoop: () => null,
+  deleteLoop: () => null,
 };
 
 const LoopContext = React.createContext<LoopContextContents>(defaultContents);
@@ -35,21 +37,27 @@ export const LoopContextProvider = ({
   }, [client]);
 
   const recordLoop = React.useCallback(
-    (idx: number) => {
-      setLoops((loops) => {
-        const newLoops = [...loops];
-        newLoops[idx] = new NetworkedLoop(audio, time, client);
-        return newLoops;
-      });
+    (dim?: CircleDimensions) => {
+      setLoops((loops) => [...loops, new NetworkedLoop(audio, time, client, dim)]);
     },
     [audio, time, client],
   );
+
+  const deleteLoop = React.useCallback((idx: number) => {
+    setLoops((loops) => {
+      const newLoops = [...loops];
+      loops[idx]?.delete();
+      newLoops.splice(idx, 1);
+      return newLoops;
+    });
+  }, []);
 
   return (
     <LoopContext.Provider
       value={{
         loops,
         recordLoop,
+        deleteLoop,
       }}
     >
       {children}

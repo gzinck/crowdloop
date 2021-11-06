@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { MutableRefObject } from 'react';
 import styled from 'styled-components';
 import theme from '../../../../theme';
 import BpbarChooser from './BpbarChooser';
@@ -23,9 +23,12 @@ const Menu = styled.div`
   position: absolute;
 `;
 
-const DropdownMenu = ({ isOpen }: Props): React.ReactElement => {
+const DropdownMenu = (
+  { isOpen }: Props,
+  ref: React.ForwardedRef<HTMLDivElement>,
+): React.ReactElement => {
   return (
-    <Menu isOpen={isOpen}>
+    <Menu isOpen={isOpen} ref={ref as MutableRefObject<HTMLDivElement>}>
       <MicDelayChooser />
       <BPMChooser />
       <BpbarChooser />
@@ -34,4 +37,4 @@ const DropdownMenu = ({ isOpen }: Props): React.ReactElement => {
   );
 };
 
-export default DropdownMenu;
+export default React.forwardRef(DropdownMenu);
