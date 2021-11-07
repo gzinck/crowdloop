@@ -13,22 +13,20 @@ const defaultRadius = 100;
 
 const DiskCreator = ({ containerRef }: Props): React.ReactElement => {
   const { recordLoop } = React.useContext(LoopContext);
-  const startX = -defaultRadius;
-  const startY = (containerRef.current?.clientWidth || 1) / 2 - defaultRadius;
+  const startX = -1.5 * defaultRadius;
+  const startY = (containerRef.current?.clientHeight || 1) / 2 - defaultRadius;
   const [{ x, y }, api] = useSpring(() => ({
     x: startX,
     y: startY,
   }));
 
+  // After render, move it in
   React.useEffect(() => {
     const sub = timer(10).subscribe(() => {
-      console.log('Got it in!');
-      const x = -defaultRadius;
-      const y = (containerRef.current?.clientWidth || 1) / 2 - defaultRadius;
+      const x = -1.5 * defaultRadius;
+      const y = (containerRef.current?.clientHeight || 1) / 2 - defaultRadius;
       api.start({ x, y, immediate: false });
-      console.log(containerRef.current?.clientWidth);
     });
-    console.log('Trying to subscribe...');
 
     return () => sub.unsubscribe();
   }, [api, containerRef]);
@@ -37,9 +35,10 @@ const DiskCreator = ({ containerRef }: Props): React.ReactElement => {
     api.start({ x: down ? startX + mx : startX, y: down ? startY + my : startY, immediate: down });
 
     if (!down) {
+      // Note: (x, y) indicate the center of the circle
       const dim = {
-        x: (mx + startX) / (containerRef.current?.clientWidth || 1),
-        y: (my + startY) / (containerRef.current?.clientHeight || 1),
+        x: (mx + startX + defaultRadius) / (containerRef.current?.clientWidth || 1),
+        y: (my + startY + defaultRadius) / (containerRef.current?.clientHeight || 1),
         radius: defaultRadius / (containerRef.current?.clientWidth || 1),
       };
       // If out of range, we're done
@@ -54,6 +53,8 @@ const DiskCreator = ({ containerRef }: Props): React.ReactElement => {
       {...bind()}
       style={{
         position: 'absolute',
+        top: 0,
+        left: 0,
         x,
         y,
         touchAction: 'none',

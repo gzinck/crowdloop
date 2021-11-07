@@ -10,7 +10,7 @@ import TimeBarButtons from './TimeBarButtons';
 
 const Bar = styled.div`
   position: fixed;
-  z-index: 1;
+  z-index: 100;
   top: 0;
   left: 0;
   width: 100%;
@@ -25,7 +25,7 @@ const Bar = styled.div`
 
 const TopLeft = styled.div`
   position: fixed;
-  z-index: 2;
+  z-index: 101;
   top: 0;
   left: 0;
   height: 5rem;
@@ -38,8 +38,8 @@ const TimeBar = (): React.ReactElement => {
   const cb = React.useCallback(() => setIsOpen(false), []);
   useOnClickOutside(ref, cb);
   return (
-    <>
-      <DropdownMenu isOpen={isOpen} ref={ref} />
+    <div ref={ref}>
+      <DropdownMenu isOpen={isOpen} />
       <Bar>
         <TopLeft>
           <IconButton onClick={() => setIsOpen((o) => !o)}>
@@ -49,7 +49,7 @@ const TimeBar = (): React.ReactElement => {
         <BarNumIndicator />
         <TimeBarButtons />
       </Bar>
-    </>
+    </div>
   );
 };
 
