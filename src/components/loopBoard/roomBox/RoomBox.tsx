@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { AudiencePos } from '../../../client/AudienceAPI';
 import APIContext from '../../../contexts/APIContext';
 
 const grayLevel = 255;
@@ -44,20 +45,30 @@ const RoomBox = (
 ): React.ReactElement => {
   const { client } = React.useContext(APIContext);
 
+  // Keep track of the audience members
+  const [members, setMembers] = React.useState<AudiencePos[]>([]);
+  React.useEffect(() => {
+    if (client) {
+      const sub = client.audience.positions$.subscribe((positions) =>
+        setMembers(Object.values(positions)),
+      );
+      return () => sub.unsubscribe();
+    }
+  }, [client]);
+
   return (
     <Container>
       <Square>
         <SubSquare ref={ref}>
-          {client &&
-            client.session.clients.map((client) => (
-              <AudienceMember
-                key={client.id}
-                style={{
-                  top: `calc(100% * ${client.x})`,
-                  left: `calc(100% * ${client.y})`,
-                }}
-              />
-            ))}
+          {members.map((member) => (
+            <AudienceMember
+              key={member.id}
+              style={{
+                top: `calc(100% * ${member.x})`,
+                left: `calc(100% * ${member.y})`,
+              }}
+            />
+          ))}
           {children}
         </SubSquare>
       </Square>

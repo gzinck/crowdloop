@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import AudienceAPI from './AudienceAPI';
 import AudioAPI from './AudioAPI';
 import ClockAPI from './ClockAPI';
 import SessionAPI from './SessionAPI';
@@ -10,6 +11,7 @@ class ClientAPI {
   public readonly sessionID: string;
   public readonly session: SessionAPI;
   private readonly clock: ClockAPI;
+  public readonly audience: AudienceAPI;
 
   constructor(ctx: AudioContext, sessionID: string) {
     const socket = io(serverURL);
@@ -17,6 +19,7 @@ class ClientAPI {
     this.audio = new AudioAPI(socket, sessionID);
     this.session = new SessionAPI(socket, sessionID);
     this.clock = new ClockAPI(socket, ctx, sessionID);
+    this.audience = new AudienceAPI(socket, sessionID);
 
     this.session.createSession();
   }
@@ -24,6 +27,7 @@ class ClientAPI {
   public cleanup(): void {
     this.session.deleteSession();
     this.clock.cleanup();
+    this.audience.cleanup();
   }
 }
 

@@ -8,6 +8,9 @@ interface CreateAudioReq {
   bpbar: number; // beats per bar
   bpm: number; // beats per minute
   nBars: number; // number of bars in new loops
+  x: number;
+  y: number;
+  radius: number;
 }
 
 interface SetAudioReq {
@@ -18,6 +21,13 @@ interface SetAudioReq {
     head: number;
     length: number;
   };
+}
+
+interface MoveAudioRequest {
+  loopID: string;
+  x: number;
+  y: number;
+  radius: number;
 }
 
 interface PlayAudioReq {
@@ -48,6 +58,13 @@ class AudioAPI {
 
   public set(req: SetAudioReq): void {
     this.io.emit(events.AUDIO_SET, {
+      ...req,
+      sessionID: this.sessionID,
+    });
+  }
+
+  public move(req: MoveAudioRequest): void {
+    this.io.emit(events.AUDIO_MOVE, {
       ...req,
       sessionID: this.sessionID,
     });

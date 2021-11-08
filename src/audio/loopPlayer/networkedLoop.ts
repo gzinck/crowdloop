@@ -12,7 +12,7 @@ export interface CircleDimensions {
   radius: number; // normalized to [0, 1] (but will probably be much less)
 }
 
-const defaultDims: CircleDimensions = { x: 0, y: 0, radius: 0 };
+const defaultDims: CircleDimensions = { x: 0.5, y: 0.5, radius: 1 };
 
 class NetworkedLoop {
   private readonly loop: Loop;
@@ -35,6 +35,7 @@ class NetworkedLoop {
       if (api) {
         api.audio.create({
           ...time,
+          ...this.dimensions,
           loopID: this.id,
           startAt,
           nPackets,
@@ -103,7 +104,12 @@ class NetworkedLoop {
 
   public setDimensions(dim: CircleDimensions): void {
     this.dimensions = dim;
-    // @TODO: actually send dimensions to the server
+    if (this.api) {
+      this.api.audio.move({
+        ...dim,
+        loopID: this.id,
+      });
+    }
   }
 }
 

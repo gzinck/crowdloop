@@ -9,7 +9,6 @@ interface PingReq {
 class ClockAPI {
   private readonly sessionID: string;
   private readonly io: Socket;
-  public readonly cleanup: () => void;
 
   constructor(io: Socket, ctx: AudioContext, sessionID: string) {
     this.sessionID = sessionID;
@@ -22,7 +21,10 @@ class ClockAPI {
         clientTime: ctx.currentTime * 1000, // convert to ms
       });
     });
-    this.cleanup = () => io.removeAllListeners(events.CLOCK_PING);
+  }
+
+  public cleanup(): void {
+    this.io.removeAllListeners(events.CLOCK_PING);
   }
 }
 
