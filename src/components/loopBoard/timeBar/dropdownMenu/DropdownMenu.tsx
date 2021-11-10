@@ -15,7 +15,7 @@ const Menu = styled.div`
   top: 5rem;
   left: 0;
   padding: 2rem;
-  z-index: 1;
+  z-index: 5;
   box-sizing: border-box;
   width: calc(min(35rem, 100%));
   color: ${theme.palette.background.contrastText};
@@ -29,9 +29,10 @@ const Backdrop = styled.div`
   left: 0;
   width: 100%;
   height: calc(100% - 5rem);
-  z-index: 1;
+  z-index: 5;
   background-color: rgba(25, 25, 25, 0.7);
   backdrop-filter: blur(5px);
+  pointer-events: none;
 `;
 
 const DropdownMenu = (

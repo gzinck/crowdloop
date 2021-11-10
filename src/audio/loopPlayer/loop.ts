@@ -37,14 +37,12 @@ class Loop {
       next: (event) => {
         if (event.type === RecordingEventType.SUCCESS) {
           this.buffer.addBlob(event.recording).then(() => {
-            if (event.recording.idx === 0) {
-              const startAt = this.buffer.start();
-              if (cb && cb.onCreateLoop) cb.onCreateLoop(startAt, numBlobs);
-            }
             if (cb && cb.onAddBlob) cb.onAddBlob(event.recording);
           });
         } else {
           this.status = LoopStatus.RECORDING;
+          const startAt = this.buffer.start();
+          if (cb && cb.onCreateLoop) cb.onCreateLoop(startAt, numBlobs);
         }
       },
       complete: () => (this.status = LoopStatus.PLAYING),

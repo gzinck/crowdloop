@@ -14,7 +14,7 @@ interface Styles {
 }
 
 interface Props extends Styles {
-  loopIdx: number;
+  loopID: string;
   isStatic?: boolean;
 }
 
@@ -52,9 +52,9 @@ const Halo = styled.div.attrs(({ halo, size, isSelected }: Styles) => ({
   z-index: -1;
 `;
 
-const LoopDisk = ({ loopIdx, size, isSelected, isStatic, halo }: Props): React.ReactElement => {
+const LoopDisk = ({ loopID, size, isSelected, isStatic, halo }: Props): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
-  const loop = loopCtx.loops[loopIdx];
+  const loop = loopCtx.loops[loopID];
 
   useRefresh(20); // Keep it up to date
 
@@ -91,9 +91,7 @@ const LoopDisk = ({ loopIdx, size, isSelected, isStatic, halo }: Props): React.R
 
   return (
     <Disk onClick={isStatic ? undefined : onClick} size={size}>
-      {loop?.getStatus() === LoopStatus.PLAYING && (
-        <Halo size={size} halo={halo} isSelected={isSelected} />
-      )}
+      <Halo size={size} halo={halo} isSelected={isSelected} />
       <ShadowedSVG viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}

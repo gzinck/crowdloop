@@ -49,9 +49,10 @@ const RoomBox = (
   const [members, setMembers] = React.useState<AudiencePos[]>([]);
   React.useEffect(() => {
     if (client) {
-      const sub = client.audience.positions$.subscribe((positions) =>
-        setMembers(Object.values(positions)),
-      );
+      const sub = client.audience.positions$.subscribe((positions) => {
+        console.log('We should have changed the number of positions', positions);
+        setMembers(Object.values(positions));
+      });
       return () => sub.unsubscribe();
     }
   }, [client]);
@@ -64,8 +65,8 @@ const RoomBox = (
             <AudienceMember
               key={member.id}
               style={{
-                top: `calc(100% * ${member.x})`,
-                left: `calc(100% * ${member.y})`,
+                top: `calc(100% * ${member.y})`,
+                left: `calc(100% * ${member.x})`,
               }}
             />
           ))}

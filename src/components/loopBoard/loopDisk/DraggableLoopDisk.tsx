@@ -8,7 +8,7 @@ import { CircleDimensions } from '../../../audio/loopPlayer/networkedLoop';
 import useOnClickOutside from '../../../hooks/useOnClickOutside';
 
 interface Props {
-  loopIdx: number; // turn this into a string when it becomes an id instead
+  loopID: string; // turn this into a string when it becomes an id instead
   containerRef: React.MutableRefObject<HTMLDivElement | null>;
 }
 
@@ -19,7 +19,7 @@ enum DragMode {
 
 const defaultRadius = 100;
 
-const DraggableLoopDisk = ({ loopIdx, containerRef }: Props): React.ReactElement => {
+const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement => {
   // Convert normalized coordinates in [0, 1] to the coordinates in pixels
   const toLocalCoors = React.useCallback(
     (dim: CircleDimensions) => {
@@ -34,7 +34,7 @@ const DraggableLoopDisk = ({ loopIdx, containerRef }: Props): React.ReactElement
   );
 
   const { loops, deleteLoop } = React.useContext(LoopContext);
-  const loop = loops[loopIdx];
+  const loop = loops[loopID];
   const loopDims = React.useRef(
     loop ? toLocalCoors(loop.dimensions) : { x: 0, y: 0, radius: defaultRadius },
   );
@@ -103,12 +103,14 @@ const DraggableLoopDisk = ({ loopIdx, containerRef }: Props): React.ReactElement
       setRadius(radius + dy);
       const normalizedRadius = (radius + dy) / (containerRef.current?.clientWidth || 1);
       if (!down) {
-        if (normalizedRadius < 0) deleteLoop(loopIdx);
+        if (normalizedRadius < 0) deleteLoop(loopID);
         else {
           loop?.setDimensions({
             ...loop.dimensions,
             radius: normalizedRadius,
           });
+          // Immediately switch back to move mode
+          setMode(DragMode.MOVE);
         }
         // If we tapped, switch modes
         if (tap) setMode(DragMode.MOVE);
@@ -132,7 +134,7 @@ const DraggableLoopDisk = ({ loopIdx, containerRef }: Props): React.ReactElement
       }}
     >
       <LoopDisk
-        loopIdx={loopIdx}
+        loopID={loopID}
         size="100%"
         halo={`${radius * 2}px`}
         isStatic

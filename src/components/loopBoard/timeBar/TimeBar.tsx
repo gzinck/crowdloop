@@ -9,12 +9,12 @@ import DropdownMenu from './dropdownMenu/DropdownMenu';
 import TimeBarButtons from './TimeBarButtons';
 
 const Bar = styled.div`
-  position: fixed;
+  position: absolute;
   z-index: 100;
   top: 0;
   left: 0;
   width: 100%;
-  height: 5rem;
+  min-height: 5rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

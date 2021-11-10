@@ -2,7 +2,7 @@ import React from 'react';
 import { useHistory } from 'react-router';
 import styled from 'styled-components';
 import SharedAudioContext from '../../contexts/SharedAudioContext';
-import { LOOP_BOARD_ROUTE } from '../../routes';
+import { SESSION_ROUTE } from '../../routes';
 import theme from '../../theme';
 import Button from '../generic/Button';
 
@@ -24,7 +24,7 @@ const GrantMicPage = (): React.ReactElement => {
   const audio = React.useContext(SharedAudioContext);
 
   React.useEffect(() => {
-    if (audio.recorder) history.push(LOOP_BOARD_ROUTE);
+    if (audio.recorder) history.push(SESSION_ROUTE);
   }, [history, audio.recorder]);
 
   return (

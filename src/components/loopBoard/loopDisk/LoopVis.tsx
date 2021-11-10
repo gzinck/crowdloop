@@ -1,7 +1,7 @@
 import React from 'react';
 
 const maxNum = 1;
-const minNum = -1;
+const minNum = 0;
 
 interface Props {
   shape: Float32Array; // Should be numbers in [0, 127]

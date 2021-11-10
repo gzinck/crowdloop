@@ -46,7 +46,8 @@ export interface LoopProgress {
 class LoopBuffer {
   private readonly buffers: (OffsetedBuffer | null)[];
   private readonly heads: number[];
-  public readonly preview: Float32Array = new Float32Array(previewSize).fill(0);
+  public readonly rawPreview: Float32Array = new Float32Array(previewSize).fill(0);
+  public preview: Float32Array;
   private readonly time: TimeSettings;
   private readonly audio: SharedAudioContextContents;
   private gainNode1: GainNode;
@@ -63,6 +64,7 @@ class LoopBuffer {
    * @param nBuffers the number of separate audio files in the loop
    */
   constructor(audio: SharedAudioContextContents, time: TimeSettings, nBuffers: number) {
+    this.preview = this.rawPreview; // For now, preview is unscaled
     this.audio = audio;
     this.time = time;
     this.buffers = new Array(nBuffers).fill(null);
@@ -108,7 +110,14 @@ class LoopBuffer {
         for (let destPos = destStart; destPos < destStart + destSize; destPos++) {
           const sourcePos =
             Math.floor((destPos - destStart) * (sourceSize / destSize)) + sourceStart;
-          this.preview[destPos] = floats[sourcePos];
+          this.rawPreview[destPos] = floats[sourcePos];
+        }
+
+        if (!this.buffers.includes(null)) {
+          // Normalize the preview values to [0, 1]
+          const minVal = this.rawPreview.reduce((curMin, cur) => Math.min(curMin, cur), 0);
+          const maxVal = this.rawPreview.reduce((curMax, cur) => Math.max(curMax, cur), 0);
+          this.preview = this.rawPreview.map((val) => (val - minVal) / (maxVal - minVal));
         }
       });
     });

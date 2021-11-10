@@ -16,7 +16,7 @@ const defaultDims: CircleDimensions = { x: 0.5, y: 0.5, radius: 1 };
 
 class NetworkedLoop {
   private readonly loop: Loop;
-  private readonly id: string;
+  public readonly id: string;
   private readonly api?: ClientAPI;
   private nPackets = 0;
   public dimensions: CircleDimensions;
@@ -49,7 +49,7 @@ class NetworkedLoop {
           api.audio.set({
             loopID: this.id,
             packet: blob.idx,
-            file: buff,
+            file: new Uint8Array(buff),
             meta: {
               head: blob.head,
               length: blob.length,

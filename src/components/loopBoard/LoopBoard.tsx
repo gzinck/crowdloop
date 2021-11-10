@@ -2,8 +2,11 @@ import React from 'react';
 import styled from 'styled-components';
 import LoopContext from '../../contexts/LoopContext';
 import FlashingBackground from './FlashingBackground';
+import IconButton from '../generic/IconButton';
+import Add from '../icons/Add';
 import LoopDisk from './loopDisk/LoopDisk';
 import TimeBar from './timeBar/TimeBar';
+import theme from '../../theme';
 
 const Screen = styled.div`
   width: 100%;
@@ -17,9 +20,12 @@ const LoopBoard = (): React.ReactElement => {
     <Screen>
       <TimeBar />
       <FlashingBackground>
-        {loopCtx.loops.map((_, idx) => (
-          <LoopDisk loopIdx={idx} key={idx} />
+        {Object.values(loopCtx.loops).map((loop) => (
+          <LoopDisk loopID={loop.id} key={loop.id} />
         ))}
+        <IconButton size="calc(250px - 1rem)" onClick={() => loopCtx.recordLoop()}>
+          <Add colour={theme.palette.primary.contrastText} />
+        </IconButton>
       </FlashingBackground>
     </Screen>
   );

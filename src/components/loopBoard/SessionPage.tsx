@@ -21,8 +21,8 @@ const SessionPage = (): React.ReactElement => {
       <TimeBar />
       <FlashingBackground>
         <RoomBox ref={boxContainer}>
-          {loopCtx.loops.map((_, idx) => (
-            <DraggableLoopDisk loopIdx={idx} key={idx} containerRef={boxContainer} />
+          {Object.values(loopCtx.loops).map((loop) => (
+            <DraggableLoopDisk loopID={loop.id} key={loop.id} containerRef={boxContainer} />
           ))}
           <DiskCreator containerRef={boxContainer} />
         </RoomBox>
