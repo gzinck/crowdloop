@@ -76,7 +76,7 @@ const LoopDisk = ({ loopID, size, isSelected, isStatic, halo }: Props): React.Re
 
   const onClick = () => {
     if (!loop) {
-      loopCtx.recordLoop();
+      loopCtx.recordLoop(true);
       return;
     }
 

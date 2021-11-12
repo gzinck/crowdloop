@@ -3,10 +3,11 @@ import SharedAudioContext from './SharedAudioContext';
 import ClockContext from './ClockContext';
 import NetworkedLoop, { CircleDimensions } from '../audio/loopPlayer/networkedLoop';
 import APIContext from './APIContext';
+import Logger, { LogType } from '../utils/Logger';
 
 interface LoopContextContents {
   loops: Record<string, NetworkedLoop>;
-  recordLoop: (dim?: CircleDimensions) => void;
+  recordLoop: (startImmediately: boolean, dim?: CircleDimensions) => void;
   deleteLoop: (loopID: string) => void;
 }
 
@@ -36,12 +37,17 @@ export const LoopContextProvider = ({
   }, [client]);
 
   const recordLoop = React.useCallback(
-    (dim?: CircleDimensions) => {
+    (startImmediately: boolean, dim?: CircleDimensions) => {
       setLoops((loops) => {
-        const newLoop = new NetworkedLoop(audio, time, client, dim);
-        const newLoops = { ...loops };
-        newLoops[newLoop.id] = newLoop;
-        return newLoops;
+        try {
+          const newLoop = new NetworkedLoop(audio, time, startImmediately, client, dim);
+          const newLoops = { ...loops };
+          newLoops[newLoop.id] = newLoop;
+          return newLoops;
+        } catch (err) {
+          Logger.error(`${err}`, LogType.RECORD);
+          return loops;
+        }
       });
     },
     [audio, time, client],

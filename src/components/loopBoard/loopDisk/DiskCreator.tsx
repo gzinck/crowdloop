@@ -32,19 +32,38 @@ const DiskCreator = ({ containerRef }: Props): React.ReactElement => {
   }, [api, containerRef]);
 
   const bind = useDrag(({ down, movement: [mx, my] }) => {
-    api.start({ x: down ? startX + mx : startX, y: down ? startY + my : startY, immediate: down });
+    const pos = {
+      x: Math.max(
+        -1.5 * defaultRadius,
+        Math.min((containerRef.current?.clientWidth || 1) - defaultRadius / 2, startX + mx),
+      ),
+      y: Math.max(
+        -1.5 * defaultRadius,
+        Math.min((containerRef.current?.clientHeight || 1) - defaultRadius / 2, startY + my),
+      ),
+    };
+
+    api.start({ x: down ? pos.x : startX, y: down ? pos.y : startY, immediate: down });
 
     if (!down) {
+      // If barely moved, cancel
+      if (Math.sqrt(mx * mx + my * my) < defaultRadius) return;
+
+      const normalizedRadius = defaultRadius / (containerRef.current?.clientWidth || 1);
+      const clamp = (n: number) =>
+        Math.max(-normalizedRadius / 2, Math.min(1 + normalizedRadius / 2, n));
+
       // Note: (x, y) indicate the center of the circle
       const dim = {
-        x: (mx + startX + defaultRadius) / (containerRef.current?.clientWidth || 1),
-        y: (my + startY + defaultRadius) / (containerRef.current?.clientHeight || 1),
-        radius: defaultRadius / (containerRef.current?.clientWidth || 1),
+        x: clamp((mx + startX + defaultRadius) / (containerRef.current?.clientWidth || 1)),
+        y: clamp((my + startY + defaultRadius) / (containerRef.current?.clientHeight || 1)),
+        radius: normalizedRadius,
       };
-      // If out of range, we're done
-      if (dim.x < 0 || dim.y < 0 || dim.x > 1 || dim.y > 1) return;
 
-      recordLoop(dim);
+      // If out of range, say so
+      const isOutOfRange = dim.x < 0 || dim.y < 0 || dim.x > 1 || dim.y > 1;
+
+      recordLoop(!isOutOfRange, dim);
     }
   });
 

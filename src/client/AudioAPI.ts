@@ -11,6 +11,7 @@ interface CreateAudioReq {
   x: number;
   y: number;
   radius: number;
+  isStopped: boolean;
 }
 
 interface SetAudioReq {

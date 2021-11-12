@@ -50,7 +50,6 @@ const RoomBox = (
   React.useEffect(() => {
     if (client) {
       const sub = client.audience.positions$.subscribe((positions) => {
-        console.log('We should have changed the number of positions', positions);
         setMembers(Object.values(positions));
       });
       return () => sub.unsubscribe();

@@ -19,6 +19,35 @@ enum DragMode {
 
 const defaultRadius = 100;
 
+const isOff = ({ x, y }: CircleDimensions): boolean => x < 0 || y < 0 || x > 1 || y > 1;
+
+const moveOn = ({ x, y, radius }: CircleDimensions): CircleDimensions => ({
+  x: x < 0 ? 0 : x > 1 ? 1 : x,
+  y: y < 0 ? 0 : y > 1 ? 1 : y,
+  radius,
+});
+
+// // Moves dimensions to the closest edge
+// const moveAway = ({ x, y, radius }: CircleDimensions): CircleDimensions => {
+//   const bestOpt = [
+//     { x: 0, y },
+//     { x: 1, y },
+//     { x, y: 0 },
+//     { x, y: 1 },
+//   ].reduce<{ x: number; y: number; cost: number }>(
+//     (best, curr) => {
+//       const currCost = Math.abs(curr.x - x) + Math.abs(curr.y - y);
+//       return currCost < best.cost ? { ...curr, cost: currCost } : best;
+//     },
+//     { x, y, cost: 100 },
+//   );
+//   return {
+//     radius,
+//     x: bestOpt.x,
+//     y: bestOpt.y,
+//   };
+// };
+
 const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement => {
   // Convert normalized coordinates in [0, 1] to the coordinates in pixels
   const toLocalCoors = React.useCallback(
@@ -54,8 +83,16 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
   const [mode, setMode] = React.useState(DragMode.MOVE);
   useOnClickOutside(discRef, () => setMode(() => DragMode.MOVE));
 
-  const bind = useDrag(({ down, tap, movement: [mx, my], delta: [, dy] }) => {
-    if (mode === DragMode.MOVE) {
+  // If using iPad, consider using touches to control things
+  const bind = useDrag(({ tap, touches, shiftKey, down, movement: [mx, my], delta: [, dy] }) => {
+    let currMode = mode;
+    if (touches > 1 || shiftKey) {
+      setMode(DragMode.EXPAND);
+      currMode = DragMode.EXPAND;
+
+      api.start({ x: loopDims.current.x, y: loopDims.current.y, immediate: false });
+    }
+    if (currMode === DragMode.MOVE) {
       // Calculate the new normalized position
       const normalizedRadius = defaultRadius / (containerRef.current?.clientWidth || 1);
       const clamp = (n: number) =>
@@ -77,13 +114,20 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
       if (!down) {
         loopDims.current = toLocalCoors(dim);
         // At the end, we check if we're out of range
-        if (dim.x < 0 || dim.y < 0 || dim.x > 1 || dim.y > 1) {
-          // If out of range and we're playing, stop it
-          if (loop?.getStatus() === LoopStatus.PLAYING) loop.stop();
+        if (isOff(dim)) {
+          // If we didn't tap, stop it
+          if (!tap) loop.stop();
           // If we tapped and it was stopped, then start it
-          else if (tap && loop?.getStatus() === LoopStatus.STOPPED) {
+          else if (
+            [LoopStatus.PENDING, LoopStatus.STOPPED, LoopStatus.RECORDING].includes(
+              loop?.getStatus(),
+            )
+          ) {
             loop.start();
             // Move the disc back to its previous location
+            // But if it was always off, move it on
+            if (isOff(loop.dimensions)) loop.setDimensions(moveOn(loop.dimensions));
+
             loopDims.current = toLocalCoors(loop.dimensions);
             api.start({
               ...toLocalCoors(loop.dimensions),
@@ -94,6 +138,11 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
           loop?.setDimensions(dim);
           // If it's now in range and it was stopped, start it
           if (loop?.getStatus() === LoopStatus.STOPPED) loop.start();
+          if (
+            [LoopStatus.PENDING, LoopStatus.RECORDING].includes(loop?.getStatus()) &&
+            !loop.willStartImmediately()
+          )
+            loop.start();
           // If we tapped, switch modes
           if (tap) setMode(DragMode.EXPAND);
         }
@@ -112,8 +161,6 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
           // Immediately switch back to move mode
           setMode(DragMode.MOVE);
         }
-        // If we tapped, switch modes
-        if (tap) setMode(DragMode.MOVE);
       }
     }
   });

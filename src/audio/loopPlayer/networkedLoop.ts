@@ -24,21 +24,23 @@ class NetworkedLoop {
   constructor(
     audio: SharedAudioContextContents,
     time: TimeSettings,
+    startImmediately = true,
     api?: ClientAPI,
     dims?: CircleDimensions,
   ) {
     this.api = api;
     this.dimensions = dims || defaultDims;
     this.id = uuid();
-    const onCreateLoop = (startAt: number, nPackets: number): void => {
+    const onCreateLoop = (nPackets: number, startAt?: number): void => {
       this.nPackets = nPackets;
       if (api) {
         api.audio.create({
           ...time,
           ...this.dimensions,
           loopID: this.id,
-          startAt,
+          startAt: startAt || 0,
           nPackets,
+          isStopped: startAt === undefined,
         });
       }
     };
@@ -59,7 +61,7 @@ class NetworkedLoop {
       }
     };
 
-    this.loop = new Loop(audio, time, {
+    this.loop = new Loop(audio, time, startImmediately, {
       onCreateLoop,
       onAddBlob,
     });
@@ -96,6 +98,10 @@ class NetworkedLoop {
 
   public getStatus(): LoopStatus {
     return this.loop.status;
+  }
+
+  public willStartImmediately(): boolean {
+    return this.loop.startImmediately;
   }
 
   public getProgress(): LoopProgress {

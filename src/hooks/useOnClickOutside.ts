@@ -11,7 +11,7 @@ function useOnClickOutside<T extends HTMLElement>(
         return;
       }
       handler(event);
-      event.preventDefault();
+      // event.preventDefault();
     };
     document.addEventListener('mousedown', listener);
     document.addEventListener('touchstart', listener);

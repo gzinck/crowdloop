@@ -23,7 +23,7 @@ const LoopBoard = (): React.ReactElement => {
         {Object.values(loopCtx.loops).map((loop) => (
           <LoopDisk loopID={loop.id} key={loop.id} />
         ))}
-        <IconButton size="calc(250px - 1rem)" onClick={() => loopCtx.recordLoop()}>
+        <IconButton size="calc(250px - 1rem)" onClick={() => loopCtx.recordLoop(true)}>
           <Add colour={theme.palette.primary.contrastText} />
         </IconButton>
       </FlashingBackground>

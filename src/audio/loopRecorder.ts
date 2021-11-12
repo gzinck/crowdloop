@@ -3,6 +3,8 @@ import { TimeSettings } from '../contexts/ClockContext';
 import { getLoopLength, getSecondsUntilStart } from '../utils/beats';
 import { SharedAudioContextContents } from '../contexts/SharedAudioContext';
 
+export const ERR_RECORDERS_LOCKED =
+  'both LoopRecorders are locked, so another recording cannot be created yet';
 export const recordingSchedulingTime = 0.05; // time before recording (s) at which time we should start scheduling because timing is imprecise
 export const recordingHead = 0.1;
 export const defaultTail = 0.1;
@@ -50,7 +52,7 @@ class LoopRecorder {
 
   constructor(ctx: AudioContext, micStream: MediaStream) {
     let mimeType = 'audio/mp4';
-    if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/webm';
 
     this.ctx = ctx;
     this.recorder1 = new MediaRecorder(micStream, { mimeType });
@@ -179,10 +181,7 @@ export class RecordingManager {
     tail: number = defaultTail,
   ): Observable<RecordingEvent> {
     if (this.recorder1.getIsLocked() && this.recorder2.getIsLocked()) {
-      return throwError(
-        () =>
-          new Error('both LoopRecorders are locked, so another recording cannot be created yet'),
-      );
+      throw new Error(ERR_RECORDERS_LOCKED);
     }
 
     const startTime =
