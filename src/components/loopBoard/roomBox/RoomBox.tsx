@@ -14,8 +14,8 @@ const Container = styled.div`
 `;
 
 const Square = styled.div`
-  height: 100%;
-  width: calc(100vh - 5rem);
+  height: calc(min(100vh, 100vw) - 5rem);
+  width: calc(min(100vh, 100vw) - 5rem);
   background-color: rgba(${grayLevel}, ${grayLevel}, ${grayLevel}, 0.01);
   position: relative;
 `;
