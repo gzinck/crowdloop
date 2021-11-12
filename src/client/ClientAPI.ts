@@ -4,8 +4,6 @@ import AudioAPI from './AudioAPI';
 import ClockAPI from './ClockAPI';
 import SessionAPI from './SessionAPI';
 
-const serverURL = 'ws://localhost:2000';
-
 class ClientAPI {
   public readonly audio: AudioAPI;
   public readonly sessionID: string;
@@ -14,7 +12,7 @@ class ClientAPI {
   public readonly audience: AudienceAPI;
 
   constructor(ctx: AudioContext, sessionID: string) {
-    const socket = io(serverURL);
+    const socket = io(process.env.REACT_APP_SERVER_URL as string);
     this.sessionID = sessionID;
     this.audio = new AudioAPI(socket, sessionID);
     this.session = new SessionAPI(socket, sessionID);
