@@ -24,7 +24,7 @@ const Bar = styled.div`
 `;
 
 const TopLeft = styled.div`
-  position: fixed;
+  position: absolute;
   z-index: 101;
   top: 0;
   left: 0;

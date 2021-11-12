@@ -6,11 +6,12 @@ import APIContext from '../../../contexts/APIContext';
 const grayLevel = 255;
 
 const Container = styled.div`
-  height: calc(100vh - 5rem);
+  height: 100vh;
   width: 100%;
   overflow: hidden;
   display: flex;
   justify-content: center;
+  align-items: center;
 `;
 
 const Square = styled.div`

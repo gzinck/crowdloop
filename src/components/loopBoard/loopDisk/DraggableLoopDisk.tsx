@@ -27,26 +27,33 @@ const moveOn = ({ x, y, radius }: CircleDimensions): CircleDimensions => ({
   radius,
 });
 
-// // Moves dimensions to the closest edge
-// const moveAway = ({ x, y, radius }: CircleDimensions): CircleDimensions => {
-//   const bestOpt = [
-//     { x: 0, y },
-//     { x: 1, y },
-//     { x, y: 0 },
-//     { x, y: 1 },
-//   ].reduce<{ x: number; y: number; cost: number }>(
-//     (best, curr) => {
-//       const currCost = Math.abs(curr.x - x) + Math.abs(curr.y - y);
-//       return currCost < best.cost ? { ...curr, cost: currCost } : best;
-//     },
-//     { x, y, cost: 100 },
-//   );
-//   return {
-//     radius,
-//     x: bestOpt.x,
-//     y: bestOpt.y,
-//   };
-// };
+// Moves dimensions to the closest edge
+const moveOff = ({ x, y, radius }: CircleDimensions): CircleDimensions => {
+  const bestOpt = [
+    { x: -0.01, y },
+    { x: 1.01, y },
+    { x, y: -0.01 },
+    { x, y: 1.01 },
+  ].reduce<{ x: number; y: number; cost: number }>(
+    (best, curr) => {
+      const currCost = Math.abs(curr.x - x) + Math.abs(curr.y - y);
+      return currCost < best.cost ? { ...curr, cost: currCost } : best;
+    },
+    { x, y, cost: 100 },
+  );
+
+  // Move the position to avoid the disk creator
+  if (bestOpt.x === -0.01 && Math.abs(bestOpt.y - 0.5) < 0.1) {
+    if (bestOpt.y < 0.5) bestOpt.y = 0.3;
+    else bestOpt.y = 0.7;
+  }
+
+  return {
+    radius,
+    x: bestOpt.x,
+    y: bestOpt.y,
+  };
+};
 
 const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement => {
   // Convert normalized coordinates in [0, 1] to the coordinates in pixels
@@ -143,8 +150,17 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
             !loop.willStartImmediately()
           )
             loop.start();
-          // If we tapped, switch modes
-          if (tap) setMode(DragMode.EXPAND);
+          // If we tapped, move off
+          if (tap) {
+            // setMode(DragMode.EXPAND);
+            const offDims = toLocalCoors(moveOff(loop.dimensions));
+            api.start({
+              ...offDims,
+              immediate: false,
+            });
+            loopDims.current = offDims;
+            loop.stop();
+          }
         }
       }
     } else {
@@ -177,6 +193,7 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
         y,
         touchAction: 'none',
         width: `${defaultRadius * 2}px`,
+        cursor: 'pointer',
         opacity: 0.5,
       }}
     >

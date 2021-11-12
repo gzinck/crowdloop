@@ -24,11 +24,11 @@ const Menu = styled.div`
 
 const Backdrop = styled.div`
   display: ${(props: Props) => (props.isOpen ? 'block' : 'none')};
-  position: absolute;
-  top: 5rem;
+  position: fixed;
+  top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - 5rem);
+  height: 100%;
   z-index: 5;
   background-color: rgba(25, 25, 25, 0.7);
   backdrop-filter: blur(5px);
