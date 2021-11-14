@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import useOnClickOutside from '../../../hooks/useOnClickOutside';
 import theme from '../../../theme';
 import IconButton from '../../generic/IconButton';
 import Menu from '../../icons/Menu';
@@ -8,12 +9,12 @@ import DropdownMenu from './dropdownMenu/DropdownMenu';
 import TimeBarButtons from './TimeBarButtons';
 
 const Bar = styled.div`
-  position: fixed;
-  z-index: 1;
+  position: absolute;
+  z-index: 100;
   top: 0;
   left: 0;
   width: 100%;
-  height: 5rem;
+  min-height: 5rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -23,8 +24,8 @@ const Bar = styled.div`
 `;
 
 const TopLeft = styled.div`
-  position: fixed;
-  z-index: 2;
+  position: absolute;
+  z-index: 101;
   top: 0;
   left: 0;
   height: 5rem;
@@ -33,8 +34,11 @@ const TopLeft = styled.div`
 
 const TimeBar = (): React.ReactElement => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const cb = React.useCallback(() => setIsOpen(false), []);
+  useOnClickOutside(ref, cb);
   return (
-    <>
+    <div ref={ref}>
       <DropdownMenu isOpen={isOpen} />
       <Bar>
         <TopLeft>
@@ -45,7 +49,7 @@ const TimeBar = (): React.ReactElement => {
         <BarNumIndicator />
         <TimeBarButtons />
       </Bar>
-    </>
+    </div>
   );
 };
 

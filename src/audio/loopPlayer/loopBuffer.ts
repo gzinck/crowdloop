@@ -1,4 +1,4 @@
-import { Subject, timer } from 'rxjs';
+import { Subject, Subscription, timer } from 'rxjs';
 import { TimeSettings } from '../../contexts/ClockContext';
 import { getLoopLength, getSecondsUntilStart } from '../../utils/beats';
 import { OffsetedBlob } from '../loopRecorder';
@@ -46,9 +46,11 @@ export interface LoopProgress {
 class LoopBuffer {
   private readonly buffers: (OffsetedBuffer | null)[];
   private readonly heads: number[];
-  public readonly preview: Float32Array = new Float32Array(previewSize).fill(0);
+  public readonly rawPreview: Float32Array = new Float32Array(previewSize).fill(0);
+  public preview: Float32Array;
   private readonly time: TimeSettings;
   private readonly audio: SharedAudioContextContents;
+  private playSubscription?: Subscription;
   private gainNode1: GainNode;
   private gainNode2: GainNode;
   private mainGainNode: GainNode;
@@ -63,6 +65,7 @@ class LoopBuffer {
    * @param nBuffers the number of separate audio files in the loop
    */
   constructor(audio: SharedAudioContextContents, time: TimeSettings, nBuffers: number) {
+    this.preview = this.rawPreview; // For now, preview is unscaled
     this.audio = audio;
     this.time = time;
     this.buffers = new Array(nBuffers).fill(null);
@@ -108,7 +111,14 @@ class LoopBuffer {
         for (let destPos = destStart; destPos < destStart + destSize; destPos++) {
           const sourcePos =
             Math.floor((destPos - destStart) * (sourceSize / destSize)) + sourceStart;
-          this.preview[destPos] = floats[sourcePos];
+          this.rawPreview[destPos] = floats[sourcePos];
+        }
+
+        if (!this.buffers.includes(null)) {
+          // Normalize the preview values to [0, 1]
+          const minVal = this.rawPreview.reduce((curMin, cur) => Math.min(curMin, cur), 0);
+          const maxVal = this.rawPreview.reduce((curMax, cur) => Math.max(curMax, cur), 0);
+          this.preview = this.rawPreview.map((val) => (val - minVal) / (maxVal - minVal));
         }
       });
     });
@@ -121,6 +131,7 @@ class LoopBuffer {
     this.stopped = true;
     this.mainGainNode.gain.setValueAtTime(1, this.audio.ctx.currentTime);
     this.mainGainNode.gain.linearRampToValueAtTime(0, this.audio.ctx.currentTime + stopTime);
+    this.playSubscription?.unsubscribe();
   }
 
   /**
@@ -128,6 +139,8 @@ class LoopBuffer {
    * @returns start time of the loop
    */
   public start(): number {
+    if (this.playSubscription) this.playSubscription.unsubscribe();
+
     this.stopped = false;
     const events$ = new Subject<AudioStartEvent>();
     const loopLength = getLoopLength(this.time);
@@ -138,7 +151,7 @@ class LoopBuffer {
     // NOTE: startTime ALWAYS refers to when the main part of the loop starts,
     // diregarding the head
 
-    const sub = events$.subscribe(({ idx, startTime, curGainNode, prvGainNode }) => {
+    this.playSubscription = events$.subscribe(({ idx, startTime, curGainNode, prvGainNode }) => {
       const buffer = this.buffers[idx];
 
       // Schedule the next change right away
@@ -170,11 +183,17 @@ class LoopBuffer {
         fadeInTime = this.audio.ctx.currentTime;
       }
 
-      prvGainNode.gain.setValueAtTime(1, fadeInTime);
-      prvGainNode.gain.linearRampToValueAtTime(0, startTime);
+      // Immediately swap gain nodes if start time is passed, otherwise go slowly
+      if (fadeInTime >= startTime) {
+        prvGainNode.gain.setValueAtTime(0, fadeInTime);
+        curGainNode.gain.setValueAtTime(1, fadeInTime);
+      } else {
+        prvGainNode.gain.setValueAtTime(1, fadeInTime);
+        prvGainNode.gain.linearRampToValueAtTime(0, startTime);
 
-      curGainNode.gain.setValueAtTime(0, fadeInTime);
-      curGainNode.gain.linearRampToValueAtTime(1, startTime);
+        curGainNode.gain.setValueAtTime(0, fadeInTime);
+        curGainNode.gain.linearRampToValueAtTime(1, startTime);
+      }
 
       // Also make sure the main gain is up
       this.mainGainNode.gain.setValueAtTime(1, fadeInTime);
@@ -191,9 +210,7 @@ class LoopBuffer {
       source.buffer = buffer.buff;
       source.connect(curGainNode);
 
-      // Start playing or stop everything here
       if (!this.stopped) source.start(fadeInTime, offset);
-      else sub.unsubscribe();
     });
 
     // Schedule the first buffer

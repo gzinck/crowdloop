@@ -12,22 +12,30 @@ export enum LoopStatus {
 }
 
 interface Callbacks {
-  onCreateLoop?: (startAt: number, numBlobs: number) => void;
+  onCreateLoop?: (umBlobs: number, startAt?: number) => void;
   onAddBlob?: (blob: OffsetedBlob) => void;
 }
 
 class Loop {
   public readonly buffer: LoopBuffer;
   public readonly time: TimeSettings;
-  public status: LoopStatus = LoopStatus.PENDING;
+  public status: LoopStatus;
+  public startImmediately = true;
 
-  constructor(audio: SharedAudioContextContents, time: TimeSettings, cb?: Callbacks) {
+  constructor(
+    audio: SharedAudioContextContents,
+    time: TimeSettings,
+    startImmediately = true,
+    cb?: Callbacks,
+  ) {
     if (!audio.recorder) {
       throw new Error(
         'must set up a mic stream and create a RecordingManager before creating a loop',
       );
     }
 
+    this.status = LoopStatus.PENDING;
+    this.startImmediately = startImmediately;
     this.time = time;
     const numBlobs = getLoopLength(time) > 4 ? 4 : 2;
     this.buffer = new LoopBuffer(audio, time, numBlobs);
@@ -37,27 +45,33 @@ class Loop {
       next: (event) => {
         if (event.type === RecordingEventType.SUCCESS) {
           this.buffer.addBlob(event.recording).then(() => {
-            if (event.recording.idx === 0) {
-              const startAt = this.buffer.start();
-              if (cb && cb.onCreateLoop) cb.onCreateLoop(startAt, numBlobs);
-            }
             if (cb && cb.onAddBlob) cb.onAddBlob(event.recording);
           });
         } else {
           this.status = LoopStatus.RECORDING;
+          const startAt = this.startImmediately ? this.buffer.start() : undefined;
+          if (cb && cb.onCreateLoop) cb.onCreateLoop(numBlobs, startAt);
         }
       },
-      complete: () => (this.status = LoopStatus.PLAYING),
+      complete: () => {
+        this.status = this.startImmediately ? LoopStatus.PLAYING : LoopStatus.STOPPED;
+      },
     });
   }
 
   stop(): void {
     this.buffer.stop();
-    this.status = LoopStatus.STOPPED;
+    if ([LoopStatus.PENDING, LoopStatus.RECORDING].includes(this.status)) {
+      this.startImmediately = false;
+    } else {
+      this.status = LoopStatus.STOPPED;
+    }
   }
 
   start(): number {
-    this.status = LoopStatus.PLAYING;
+    if (this.status === LoopStatus.STOPPED) this.status = LoopStatus.PLAYING;
+    else this.startImmediately = true;
+
     return this.buffer.start();
   }
 }

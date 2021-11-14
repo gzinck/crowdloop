@@ -7,16 +7,25 @@ import LoopVis from './LoopVis';
 import LoopContext from '../../../contexts/LoopContext';
 import { LoopStatus } from '../../../audio/loopPlayer/loop';
 
-interface Props {
-  loopIdx: number;
+interface Styles {
+  size?: string; // diameter size
+  halo?: string; // diameter of the halo
+  isSelected?: boolean;
 }
 
+interface Props extends Styles {
+  loopID: string;
+  isStatic?: boolean;
+}
+
+const defaultSize = '250px';
 const Disk = styled.div`
-  width: 90%;
-  max-width: 250px;
+  width: ${({ size }: Styles) => size || defaultSize};
   padding: ${theme.padding(1)};
   display: flex;
   justify-content: center;
+  box-sizing: border-box;
+  position: relative;
 `;
 
 const ShadowedSVG = styled.svg`
@@ -24,11 +33,28 @@ const ShadowedSVG = styled.svg`
   filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
   width: 100%;
   height: 100%;
+  z-index: 3;
 `;
 
-const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
+const Halo = styled.div.attrs(({ halo, size, isSelected }: Styles) => ({
+  style: {
+    width: halo || 0,
+    height: halo || 0,
+    left: `calc((${size || defaultSize} - ${halo || 0}) / 2)`,
+    top: `calc((${size || defaultSize} - ${halo || 0}) / 2)`,
+    opacity: isSelected ? 1 : 0.4,
+  },
+}))<Styles>`
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background-color: ${theme.palette.background.light};
+  z-index: -1;
+`;
+
+const LoopDisk = ({ loopID, size, isSelected, isStatic, halo }: Props): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
-  const loop = loopCtx.loops[loopIdx];
+  const loop = loopCtx.loops[loopID];
 
   useRefresh(20); // Keep it up to date
 
@@ -50,7 +76,7 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
 
   const onClick = () => {
     if (!loop) {
-      loopCtx.recordLoop(loopIdx);
+      loopCtx.recordLoop(true);
       return;
     }
 
@@ -64,12 +90,17 @@ const LoopDisk = ({ loopIdx }: Props): React.ReactElement => {
   };
 
   return (
-    <Disk onClick={onClick}>
+    <Disk onClick={isStatic ? undefined : onClick} size={size}>
+      <Halo size={size} halo={halo} isSelected={isSelected} />
       <ShadowedSVG viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="50" fill={backgroundColour} />
         {/* Show a vis for the loop's contents */}
         {loop && (
-          <LoopVis radius={50} shape={loop.getPreview()} fill={theme.palette.primary.dark} />
+          <LoopVis
+            radius={50}
+            shape={loop.getPreview()}
+            fill={isSelected ? theme.palette.primary.light : theme.palette.primary.dark}
+          />
         )}
         {/* Show the current position in the loop with a circling cursor */}
         {currAngle !== null && (

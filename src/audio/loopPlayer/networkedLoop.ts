@@ -6,21 +6,41 @@ import { v4 as uuid } from 'uuid';
 import { OffsetedBlob } from '../loopRecorder';
 import { LoopProgress } from './loopBuffer';
 
+export interface CircleDimensions {
+  x: number; // normalized to [0, 1]
+  y: number; // normalized to [0, 1]
+  radius: number; // normalized to [0, 1] (but will probably be much less)
+}
+
+const defaultDims: CircleDimensions = { x: 0.5, y: 0.5, radius: 1 };
+
 class NetworkedLoop {
   private readonly loop: Loop;
-  private readonly id: string;
+  public readonly id: string;
   private readonly api?: ClientAPI;
+  private nPackets = 0;
+  public dimensions: CircleDimensions;
 
-  constructor(audio: SharedAudioContextContents, time: TimeSettings, api?: ClientAPI) {
+  constructor(
+    audio: SharedAudioContextContents,
+    time: TimeSettings,
+    startImmediately = true,
+    api?: ClientAPI,
+    dims?: CircleDimensions,
+  ) {
     this.api = api;
+    this.dimensions = dims || defaultDims;
     this.id = uuid();
-    const onCreateLoop = (startAt: number, nPackets: number): void => {
+    const onCreateLoop = (nPackets: number, startAt?: number): void => {
+      this.nPackets = nPackets;
       if (api) {
         api.audio.create({
           ...time,
+          ...this.dimensions,
           loopID: this.id,
-          startAt,
+          startAt: startAt || 0,
           nPackets,
+          isStopped: startAt === undefined,
         });
       }
     };
@@ -31,7 +51,7 @@ class NetworkedLoop {
           api.audio.set({
             loopID: this.id,
             packet: blob.idx,
-            file: buff,
+            file: new Uint8Array(buff),
             meta: {
               head: blob.head,
               length: blob.length,
@@ -41,7 +61,7 @@ class NetworkedLoop {
       }
     };
 
-    this.loop = new Loop(audio, time, {
+    this.loop = new Loop(audio, time, startImmediately, {
       onCreateLoop,
       onAddBlob,
     });
@@ -62,6 +82,16 @@ class NetworkedLoop {
     if (this.api) this.api.audio.stop(this.id);
   }
 
+  public delete(): void {
+    if (this.getStatus() === LoopStatus.PLAYING) this.loop.stop();
+    if (this.api) {
+      this.api.audio.delete({
+        loopID: this.id,
+        nPackets: this.nPackets,
+      });
+    }
+  }
+
   public getPreview(): Float32Array {
     return this.loop.buffer.preview;
   }
@@ -70,8 +100,22 @@ class NetworkedLoop {
     return this.loop.status;
   }
 
+  public willStartImmediately(): boolean {
+    return this.loop.startImmediately;
+  }
+
   public getProgress(): LoopProgress {
     return this.loop.buffer.getProgress();
+  }
+
+  public setDimensions(dim: CircleDimensions): void {
+    this.dimensions = dim;
+    if (this.api) {
+      this.api.audio.move({
+        ...dim,
+        loopID: this.id,
+      });
+    }
   }
 }
 
