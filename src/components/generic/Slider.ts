@@ -11,7 +11,7 @@ const Slider = styled.input.attrs({
   height: 2rem;
   background: ${theme.palette.background.light};
   outline: none;
-  ${theme.shadow}
+  ${theme.shadow.light}
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;

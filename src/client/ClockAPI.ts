@@ -23,6 +23,10 @@ class ClockAPI {
     });
   }
 
+  public sync(): void {
+    this.io.emit(events.CLOCK_GET);
+  }
+
   public cleanup(): void {
     this.io.removeAllListeners(events.CLOCK_PING);
   }

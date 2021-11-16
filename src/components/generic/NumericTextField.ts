@@ -15,7 +15,7 @@ const NumericTextField = styled.input.attrs({
   border-radius: 1rem;
   padding: 0.2rem 1rem;
   font-size: 1rem;
-  ${theme.shadow}
+  ${theme.shadow.light}
 
   &:focus {
     background-color: ${theme.palette.primary.dark};

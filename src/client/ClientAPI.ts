@@ -10,7 +10,7 @@ class ClientAPI {
   public readonly audio: AudioAPI;
   public readonly sessionID: string;
   public readonly session: SessionAPI;
-  private readonly clock: ClockAPI;
+  public readonly clock: ClockAPI;
   public readonly audience: AudienceAPI;
 
   constructor(ctx: AudioContext, sessionID: string) {

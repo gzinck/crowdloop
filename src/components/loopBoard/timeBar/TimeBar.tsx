@@ -6,6 +6,7 @@ import IconButton from '../../generic/IconButton';
 import Menu from '../../icons/Menu';
 import BarNumIndicator from './BarNumIndicator';
 import DropdownMenu from './dropdownMenu/DropdownMenu';
+import SyncButton from './SyncButton';
 import TimeBarButtons from './TimeBarButtons';
 
 const Bar = styled.div`
@@ -32,6 +33,15 @@ const TopLeft = styled.div`
   width: 5rem;
 `;
 
+const TopRight = styled.div`
+  position: absolute;
+  z-index: 101;
+  top: 0;
+  right: 0;
+  height: 5rem;
+  width: 5rem;
+`;
+
 const TimeBar = (): React.ReactElement => {
   const [isOpen, setIsOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -48,6 +58,9 @@ const TimeBar = (): React.ReactElement => {
         </TopLeft>
         <BarNumIndicator />
         <TimeBarButtons />
+        <TopRight>
+          <SyncButton />
+        </TopRight>
       </Bar>
     </div>
   );

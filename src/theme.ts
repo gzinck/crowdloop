@@ -2,6 +2,7 @@ const theme = {
   palette: {
     primary: {
       default: '#c76f18',
+      depressed: '#b05e0c',
       dark: '#994d00',
       light: '#d98f45',
       contrastText: '#FFF',
@@ -27,9 +28,17 @@ const theme = {
     },
   },
   padding: (multiplier = 1): string => `${multiplier * 0.5}rem`,
-  shadow: `
-    -webkit-filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
-    filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));`,
+  shadow: {
+    dark: `
+      -webkit-filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));
+      filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.7));`,
+    light: `
+      -webkit-filter: drop-shadow(0px 1px 0px rgba(0, 0, 0, 0.3));
+      filter: drop-shadow(0px 1px 0px rgba(0, 0, 0, 0.3));`,
+    default: `
+      -webkit-filter: drop-shadow(0px 1px 0px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0px 1px 0px rgba(0, 0, 0, 0.6));`,
+  },
 };
 
 export default theme;
