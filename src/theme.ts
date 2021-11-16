@@ -18,6 +18,9 @@ const theme = {
         return `rgb(${colour}, ${colour}, ${colour})`;
       },
     },
+    error: {
+      default: '#b02000',
+    },
     recording: {
       pending: '#bd7b09',
       recording: '#b02000',

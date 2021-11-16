@@ -5,7 +5,6 @@ import LoopDisk from './LoopDisk';
 import LoopContext from '../../../contexts/LoopContext';
 import { LoopStatus } from '../../../audio/loopPlayer/loop';
 import { CircleDimensions } from '../../../audio/loopPlayer/networkedLoop';
-import useOnClickOutside from '../../../hooks/useOnClickOutside';
 
 interface Props {
   loopID: string; // turn this into a string when it becomes an id instead
@@ -86,19 +85,18 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
     }
   }, [api, loop, toLocalCoors]);
 
-  const discRef = React.useRef(null);
   const [mode, setMode] = React.useState(DragMode.MOVE);
-  useOnClickOutside(discRef, () => setMode(() => DragMode.MOVE));
 
   // If using iPad, consider using touches to control things
   const bind = useDrag(({ tap, touches, shiftKey, down, movement: [mx, my], delta: [, dy] }) => {
     let currMode = mode;
-    if (touches > 1 || shiftKey) {
+    if ((touches > 1 || shiftKey) && currMode !== DragMode.EXPAND) {
       setMode(DragMode.EXPAND);
       currMode = DragMode.EXPAND;
 
       api.start({ x: loopDims.current.x, y: loopDims.current.y, immediate: false });
     }
+
     if (currMode === DragMode.MOVE) {
       // Calculate the new normalized position
       const normalizedRadius = defaultRadius / (containerRef.current?.clientWidth || 1);
@@ -118,6 +116,7 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
       const localDim = toLocalCoors(dim);
       api.start({ x: localDim.x, y: localDim.y, immediate: down });
 
+      // If we finished in DragMode.MOVE...
       if (!down) {
         loopDims.current = toLocalCoors(dim);
         // At the end, we check if we're out of range
@@ -164,17 +163,19 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
         }
       }
     } else {
-      // We are expanding
+      // DragMode.EXPAND
       setRadius(radius + dy);
-      const normalizedRadius = (radius + dy) / (containerRef.current?.clientWidth || 1);
+
+      // If we finished in DragMode.EXPAND...
       if (!down) {
+        const normalizedRadius = (radius + dy) / (containerRef.current?.clientWidth || 1);
         if (normalizedRadius < 0) deleteLoop(loopID);
         else {
           loop?.setDimensions({
             ...loop.dimensions,
             radius: normalizedRadius,
           });
-          // Immediately switch back to move mode
+          // Immediately switch back to DragMode.MOVE
           setMode(DragMode.MOVE);
         }
       }
@@ -184,7 +185,6 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
   return (
     <animated.div
       {...bind()}
-      ref={discRef}
       style={{
         position: 'absolute',
         top: 0,
@@ -200,7 +200,8 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
       <LoopDisk
         loopID={loopID}
         size="100%"
-        halo={`${radius * 2}px`}
+        warning={radius <= 0}
+        halo={`${Math.max(radius * 2, 0)}px`}
         isStatic
         isSelected={mode === DragMode.EXPAND}
       />

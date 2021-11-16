@@ -16,6 +16,7 @@ interface Styles {
 interface Props extends Styles {
   loopID: string;
   isStatic?: boolean;
+  warning?: boolean;
 }
 
 const defaultSize = '250px';
@@ -52,7 +53,14 @@ const Halo = styled.div.attrs(({ halo, size, isSelected }: Styles) => ({
   z-index: -1;
 `;
 
-const LoopDisk = ({ loopID, size, isSelected, isStatic, halo }: Props): React.ReactElement => {
+const LoopDisk = ({
+  loopID,
+  size,
+  isSelected,
+  isStatic,
+  halo,
+  warning,
+}: Props): React.ReactElement => {
   const loopCtx = React.useContext(LoopContext);
   const loop = loopCtx.loops[loopID];
 
@@ -99,7 +107,13 @@ const LoopDisk = ({ loopID, size, isSelected, isStatic, halo }: Props): React.Re
           <LoopVis
             radius={50}
             shape={loop.getPreview()}
-            fill={isSelected ? theme.palette.primary.light : theme.palette.primary.dark}
+            fill={
+              warning
+                ? theme.palette.error.default
+                : isSelected
+                ? theme.palette.primary.light
+                : theme.palette.primary.dark
+            }
           />
         )}
         {/* Show the current position in the loop with a circling cursor */}
