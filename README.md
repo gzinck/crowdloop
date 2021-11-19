@@ -22,6 +22,14 @@ npm start
 Then, go to your browser and accept the unsecure site. HTTPS is used because
 on mobile Safari, the mic is disabled for unsecure websites.
 
+## Known issues
+
+- On iOS, audio interfaces are not supported. This is not something we can fix,
+  it's a limitation of the platform.
+- On iOS, drag end does not always register.
+- On laptops/desktops, drag end does not always register in Chrome. This can be
+  avoided by using Firefox instead.
+
 ## Available Scripts
 
 In the project directory, you can run:

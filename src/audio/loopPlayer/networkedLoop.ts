@@ -83,7 +83,7 @@ class NetworkedLoop {
   }
 
   public delete(): void {
-    if (this.getStatus() === LoopStatus.PLAYING) this.loop.stop();
+    this.loop.stop();
     if (this.api) {
       this.api.audio.delete({
         loopID: this.id,

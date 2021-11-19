@@ -1,10 +1,12 @@
 import React from 'react';
 import { useSpring, animated } from '@react-spring/web';
-import { useDrag } from '@use-gesture/react';
+import { createUseGesture, dragAction, scrollAction } from '@use-gesture/react';
 import LoopDisk from './LoopDisk';
 import LoopContext from '../../../contexts/LoopContext';
 import { LoopStatus } from '../../../audio/loopPlayer/loop';
 import { CircleDimensions } from '../../../audio/loopPlayer/networkedLoop';
+
+const useGesture = createUseGesture([dragAction, scrollAction]);
 
 interface Props {
   loopID: string; // turn this into a string when it becomes an id instead
@@ -17,6 +19,7 @@ enum DragMode {
 }
 
 const defaultRadius = 100;
+const radiusChangeFactor = 2;
 
 const isOff = ({ x, y }: CircleDimensions): boolean => x < 0 || y < 0 || x > 1 || y > 1;
 
@@ -77,6 +80,24 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
   const [radius, setRadius] = React.useState(loopDims.current.radius);
   const [{ x, y }, api] = useSpring(() => ({ x: 0, y: 0 }));
 
+  const getNormalizedCoors = React.useCallback(
+    (mx: number, my: number) => {
+      const normalizedRadius = defaultRadius / (containerRef.current?.clientWidth || 1);
+      const clamp = (n: number) =>
+        Math.max(-normalizedRadius / 2, Math.min(1 + normalizedRadius / 2, n));
+      return {
+        x: clamp(
+          (mx + loopDims.current.x + defaultRadius) / (containerRef.current?.clientWidth || 1),
+        ),
+        y: clamp(
+          (my + loopDims.current.y + defaultRadius) / (containerRef.current?.clientHeight || 1),
+        ),
+        radius: loop?.dimensions.radius || defaultRadius,
+      };
+    },
+    [containerRef, loop?.dimensions.radius],
+  );
+
   React.useEffect(() => {
     if (loop) {
       loopDims.current = toLocalCoors(loop.dimensions);
@@ -88,38 +109,41 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
   const [mode, setMode] = React.useState(DragMode.MOVE);
 
   // If using iPad, consider using touches to control things
-  const bind = useDrag(({ tap, touches, shiftKey, down, movement: [mx, my], delta: [, dy] }) => {
-    let currMode = mode;
-    if ((touches > 1 || shiftKey) && currMode !== DragMode.EXPAND) {
-      setMode(DragMode.EXPAND);
-      currMode = DragMode.EXPAND;
+  const bind = useGesture({
+    onDrag: ({
+      touches,
+      metaKey,
+      altKey,
+      shiftKey,
+      ctrlKey,
+      movement: [mx, my],
+      delta: [, dy],
+    }) => {
+      // Determine which mode we are in
+      let currMode = mode;
+      if (
+        (touches > 1 || metaKey || altKey || shiftKey || ctrlKey) &&
+        currMode !== DragMode.EXPAND
+      ) {
+        setMode(DragMode.EXPAND);
+        currMode = DragMode.EXPAND;
+        api.start({ x: loopDims.current.x, y: loopDims.current.y, immediate: false });
+      }
 
-      api.start({ x: loopDims.current.x, y: loopDims.current.y, immediate: false });
-    }
-
-    if (currMode === DragMode.MOVE) {
-      // Calculate the new normalized position
-      const normalizedRadius = defaultRadius / (containerRef.current?.clientWidth || 1);
-      const clamp = (n: number) =>
-        Math.max(-normalizedRadius / 2, Math.min(1 + normalizedRadius / 2, n));
-      const dim = {
-        x: clamp(
-          (mx + loopDims.current.x + defaultRadius) / (containerRef.current?.clientWidth || 1),
-        ),
-        y: clamp(
-          (my + loopDims.current.y + defaultRadius) / (containerRef.current?.clientHeight || 1),
-        ),
-        radius: loop?.dimensions.radius || defaultRadius,
-      };
-
-      // Start moving the disk the desired distance from the current loop pos
-      const localDim = toLocalCoors(dim);
-      api.start({ x: localDim.x, y: localDim.y, immediate: down });
-
-      // If we finished in DragMode.MOVE...
-      if (!down) {
+      if (currMode === DragMode.MOVE) {
+        // Start moving the disk the desired distance from the current loop pos
+        const localDim = toLocalCoors(getNormalizedCoors(mx, my));
+        api.start({ x: localDim.x, y: localDim.y, immediate: true });
+      } else {
+        // DragMode.EXPAND
+        setRadius(radius + radiusChangeFactor * dy);
+      }
+    },
+    onDragEnd: ({ tap, movement: [mx, my] }) => {
+      if (mode === DragMode.MOVE) {
+        const dim = getNormalizedCoors(mx, my);
         loopDims.current = toLocalCoors(dim);
-        // At the end, we check if we're out of range
+        // If we're not out of range, figure out what needs to be done
         if (isOff(dim)) {
           // If we didn't tap, stop it
           if (!tap) loop.stop();
@@ -133,7 +157,6 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
             // Move the disc back to its previous location
             // But if it was always off, move it on
             if (isOff(loop.dimensions)) loop.setDimensions(moveOn(loop.dimensions));
-
             loopDims.current = toLocalCoors(loop.dimensions);
             api.start({
               ...toLocalCoors(loop.dimensions),
@@ -141,6 +164,7 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
             });
           }
         } else {
+          // If it is not off (out of range)
           loop?.setDimensions(dim);
           // If it's now in range and it was stopped, start it
           if (loop?.getStatus() === LoopStatus.STOPPED) loop.start();
@@ -161,14 +185,10 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
             loop.stop();
           }
         }
-      }
-    } else {
-      // DragMode.EXPAND
-      setRadius(radius + dy);
-
-      // If we finished in DragMode.EXPAND...
-      if (!down) {
-        const normalizedRadius = (radius + dy) / (containerRef.current?.clientWidth || 1);
+      } else {
+        // DragMode.EXPAND
+        console.log('BYE');
+        const normalizedRadius = radius / (containerRef.current?.clientWidth || 1);
         if (normalizedRadius < 0) deleteLoop(loopID);
         else {
           loop?.setDimensions({
@@ -179,7 +199,22 @@ const DraggableLoopDisk = ({ loopID, containerRef }: Props): React.ReactElement 
           setMode(DragMode.MOVE);
         }
       }
-    }
+    },
+    onScroll: ({ delta: [, dy] }) => {
+      // DragMode.EXPAND
+      console.log('HELLO');
+      setRadius(radius + radiusChangeFactor * dy);
+    },
+    onScrollEnd: () => {
+      const normalizedRadius = radius / (containerRef.current?.clientWidth || 1);
+      if (normalizedRadius < 0) deleteLoop(loopID);
+      else {
+        loop?.setDimensions({
+          ...loop.dimensions,
+          radius: normalizedRadius,
+        });
+      }
+    },
   });
 
   return (
