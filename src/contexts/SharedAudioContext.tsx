@@ -10,6 +10,7 @@ const MIC_DELAY_COOKIE = 'mic-delay';
 
 export interface SharedAudioContextContents {
   ctx: AudioContext;
+  destination: AudioNode; // In our case, a compressor connected to the ctx destination
   startTime: number; // time when the session started, in seconds
   micDelay: number;
   recorder?: RecordingManager;
@@ -17,15 +18,39 @@ export interface SharedAudioContextContents {
   setMicDelay: (s: number) => void;
 }
 
-const defaultContents: SharedAudioContextContents = {
-  ctx: new AudioContext(),
-  startTime: 0, // Clock always starts at 0 seconds in audio ctx
-  micDelay: 0, // seconds of delay in the mic
-  getMicStream: () => null,
-  setMicDelay: () => null,
-};
+// Singleton design pattern so we don't accidentally make multiple audio contexts
+class DefaultContents {
+  private static contents?: SharedAudioContextContents;
+  public static get(): SharedAudioContextContents {
+    if (!DefaultContents.contents) {
+      const ctx = new AudioContext();
 
-const SharedAudioContext = React.createContext<SharedAudioContextContents>(defaultContents);
+      // For old iOS compatability, create the compressor in this gross way
+      const destination = ctx.createDynamicsCompressor();
+      destination.attack.setValueAtTime(0.003, ctx.currentTime);
+      destination.knee.setValueAtTime(30, ctx.currentTime);
+      destination.ratio.setValueAtTime(12, ctx.currentTime);
+      destination.release.setValueAtTime(0.25, ctx.currentTime);
+      destination.threshold.setValueAtTime(-24, ctx.currentTime);
+      destination.connect(ctx.destination);
+
+      DefaultContents.contents = {
+        ctx,
+        destination,
+        startTime: 0, // Clock always starts at 0 seconds in audio ctx
+        micDelay: 0, // seconds of delay in the mic
+        getMicStream: () => null,
+        setMicDelay: () => null,
+      };
+    }
+
+    return DefaultContents.contents;
+  }
+}
+
+const SharedAudioContext = React.createContext<SharedAudioContextContents>(
+  {} as SharedAudioContextContents,
+);
 
 export const SharedAudioContextProvider = ({
   children,
@@ -33,7 +58,7 @@ export const SharedAudioContextProvider = ({
   children: React.ReactElement;
 }): React.ReactElement => {
   const history = useHistory();
-  const [contents, setContents] = React.useState<SharedAudioContextContents>(defaultContents);
+  const [contents, setContents] = React.useState<SharedAudioContextContents>(DefaultContents.get());
 
   // Subject for setting cookie for mic delay with throttling
   // to avoid too many cookie sets

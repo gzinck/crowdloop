@@ -75,7 +75,7 @@ class LoopBuffer {
     // Main gain is for the emergency stops
     this.mainGainNode = audio.ctx.createGain();
     this.mainGainNode.gain.value = 0;
-    this.mainGainNode.connect(audio.ctx.destination);
+    this.mainGainNode.connect(audio.destination);
 
     // Other gain is for fading in/out pieces of the audio file
     this.gainNode1 = audio.ctx.createGain();
