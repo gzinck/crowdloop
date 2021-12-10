@@ -4,6 +4,21 @@ import { getLoopLength, getSecondsUntilStart } from '../../utils/beats';
 import { OffsetedBlob } from '../loopRecorder';
 import { SharedAudioContextContents } from '../../contexts/SharedAudioContext';
 import { recordingHead } from '../loopRecorder';
+import { limiterLookaheadDelay } from '../constants';
+
+// Some notes: we will ALWAYS start and schedule loops early by 5ms
+// (or whatever limiterLookaheadDelay is) because we need to be able to
+// look ahead to void clipping.
+//
+// We will always start an audio file early by its head length, which makes it
+// possible to fade the audio in. The gain will go from 0 to 100 from the time
+// [start time - head length - limiter lookahead] to [start time - limiter lookahead].
+//
+// We will always schedule a change to occur 50ms in advance because
+// timing is not guaranteed in JS. This is represented by schedulingTime and
+// does not affect the actual start times of the loops. It just affects when
+// we schedule the future start time.
+// Note that we could do without this and just do everythign in advance.
 
 const previewSize = 200;
 const schedulingTime = 0.05; // time in s before loop start at which point we should start scheduling things
@@ -149,7 +164,7 @@ class LoopBuffer {
     const buffLength = loopLength / this.buffers.length;
 
     // NOTE: startTime ALWAYS refers to when the main part of the loop starts,
-    // diregarding the head
+    // diregarding the head and the limiter lookahead
 
     this.playSubscription = events$.subscribe(({ idx, startTime, curGainNode, prvGainNode }) => {
       const buffer = this.buffers[idx];
@@ -165,7 +180,12 @@ class LoopBuffer {
           : // otherwise, just get it the lazy way
             startTime + buffLength;
 
-      const timeUntilNext = nxtStartTime - this.audio.ctx.currentTime - nxtHead - schedulingTime;
+      const timeUntilNext =
+        nxtStartTime -
+        this.audio.ctx.currentTime -
+        nxtHead -
+        schedulingTime -
+        limiterLookaheadDelay;
       timer(timeUntilNext * 1000).subscribe(() => {
         events$.next({
           idx: nxtIdx,
@@ -176,7 +196,7 @@ class LoopBuffer {
       });
 
       // Swap the gain nodes
-      let fadeInTime = startTime - (buffer?.head || recordingHead);
+      let fadeInTime = startTime - (buffer?.head || recordingHead) - limiterLookaheadDelay;
       let offset: number | undefined = undefined;
       if (fadeInTime < this.audio.ctx.currentTime) {
         offset = this.audio.ctx.currentTime - fadeInTime;
@@ -215,17 +235,23 @@ class LoopBuffer {
 
     // Schedule the first buffer
     const firstHead = this.buffers[0]?.head || recordingHead;
-    const timeUntilFirst = getSecondsUntilStart(this.time, this.audio, schedulingTime);
+    const timeUntilFirst = getSecondsUntilStart(
+      this.time,
+      this.audio,
+      schedulingTime + limiterLookaheadDelay,
+    );
     const firstStartTime = timeUntilFirst + this.audio.ctx.currentTime;
 
-    timer((timeUntilFirst - firstHead - schedulingTime) * 1000).subscribe(() => {
-      events$.next({
-        idx: 0,
-        startTime: firstStartTime,
-        curGainNode: this.gainNode1,
-        prvGainNode: this.gainNode2,
-      });
-    });
+    timer((timeUntilFirst - firstHead - schedulingTime - limiterLookaheadDelay) * 1000).subscribe(
+      () => {
+        events$.next({
+          idx: 0,
+          startTime: firstStartTime,
+          curGainNode: this.gainNode1,
+          prvGainNode: this.gainNode2,
+        });
+      },
+    );
 
     return firstStartTime;
   }

@@ -2,9 +2,11 @@ import React from 'react';
 import { useHistory } from 'react-router';
 import { auditTime, Subject, interval } from 'rxjs';
 import Cookies from 'js-cookie';
+import LimiterNode from 'audio-limiter';
 import { GRANT_MIC_ROUTE } from '../routes';
 import { RecordingManager } from '../audio/loopRecorder';
 import { getMicPermissions, hasMicPermissions } from '../audio/micStream';
+import { limiterLookaheadDelay } from '../audio/constants';
 
 const MIC_DELAY_COOKIE = 'mic-delay';
 
@@ -25,18 +27,22 @@ class DefaultContents {
     if (!DefaultContents.contents) {
       const ctx = new AudioContext();
 
+      // Sound architecture: [NODES] => [compressor] => [limiter] => [destination]
+      const limiter = new LimiterNode(ctx, { time: limiterLookaheadDelay });
+      limiter.connect(ctx.destination);
+
       // For old iOS compatability, create the compressor in this gross way
-      const destination = ctx.createDynamicsCompressor();
-      destination.attack.setValueAtTime(0.003, ctx.currentTime);
-      destination.knee.setValueAtTime(30, ctx.currentTime);
-      destination.ratio.setValueAtTime(12, ctx.currentTime);
-      destination.release.setValueAtTime(0.25, ctx.currentTime);
-      destination.threshold.setValueAtTime(-24, ctx.currentTime);
-      destination.connect(ctx.destination);
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+      compressor.knee.setValueAtTime(30, ctx.currentTime);
+      compressor.ratio.setValueAtTime(12, ctx.currentTime);
+      compressor.release.setValueAtTime(0.25, ctx.currentTime);
+      compressor.threshold.setValueAtTime(-24, ctx.currentTime);
+      compressor.connect(limiter);
 
       DefaultContents.contents = {
         ctx,
-        destination,
+        destination: compressor,
         startTime: 0, // Clock always starts at 0 seconds in audio ctx
         micDelay: 0, // seconds of delay in the mic
         getMicStream: () => null,
