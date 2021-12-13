@@ -14,10 +14,22 @@ export interface CircleDimensions {
 
 const defaultDims: CircleDimensions = { x: 0.5, y: 0.5, radius: 1 };
 
+/**
+ * Gets timestamp for a time representing the number of seconds
+ * since the beginning of an audio context. Timestamp is in seconds.
+ * @param time s since start of the ctx
+ * @param ctx the audio context used for time
+ */
+const getTimestamp = (time: number, ctx: AudioContext): number => {
+  console.log(Date.now(), ctx.currentTime, time);
+  return Date.now() / 1000 - ctx.currentTime + time;
+};
+
 class NetworkedLoop {
   private readonly loop: Loop;
   public readonly id: string;
   private readonly api?: ClientAPI;
+  private readonly audio: SharedAudioContextContents;
   private nPackets = 0;
   public dimensions: CircleDimensions;
 
@@ -29,18 +41,23 @@ class NetworkedLoop {
     dims?: CircleDimensions,
   ) {
     this.api = api;
+    this.audio = audio;
     this.dimensions = dims || defaultDims;
     this.id = uuid();
-    const onCreateLoop = (nPackets: number, startAt?: number): void => {
+    const onCreateLoop = (nPackets: number, localStartAt?: number): void => {
+      // Get the time
+      const startAt = localStartAt ? getTimestamp(localStartAt, audio.ctx) : 0;
+      console.log('It will start at', startAt);
+
       this.nPackets = nPackets;
       if (api) {
         api.audio.create({
           ...time,
           ...this.dimensions,
           loopID: this.id,
-          startAt: startAt || 0,
+          startAt,
           nPackets,
-          isStopped: startAt === undefined,
+          isStopped: localStartAt === undefined,
         });
       }
     };
@@ -68,7 +85,9 @@ class NetworkedLoop {
   }
 
   public start(): void {
-    const startTime = this.loop.start();
+    const localStartTime = this.loop.start();
+    const startTime = getTimestamp(localStartTime, this.audio.ctx);
+
     if (this.api) {
       this.api.audio.play({
         loopID: this.id,
